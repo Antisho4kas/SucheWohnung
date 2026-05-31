@@ -58,6 +58,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Build shared package
+        run: npm run build -w @suchewohnung/shared
+
       - name: Type check
         run: npm run typecheck
 
