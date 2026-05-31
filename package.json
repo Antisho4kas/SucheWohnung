@@ -12,8 +12,8 @@
     "services/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
-    "typecheck": "tsc -b",
+    "build": "npm run build -w @suchewohnung/shared && npm run build -w @suchewohnung/database && npm run build -w @suchewohnung/api && npm run build -w @suchewohnung/worker && npm run build -w @suchewohnung/bot && npm run build -w @suchewohnung/web",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --ext .ts,.tsx",
