@@ -17,8 +17,10 @@ import type {
   AdminAuditLog,
 } from "@/lib/api";
 import { api } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
 
 export default function AdminPage() {
+  const { t } = useLocale();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [sources, setSources] = useState<AdminSource[]>([]);
   const [queue, setQueue] = useState<AdminQueueStatus | null>(null);
@@ -62,31 +64,31 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-xl text-muted-foreground">Wird geladen...</p>
+        <p className="text-xl text-muted-foreground">{t("admin.loading")}</p>
       </div>
     );
   }
 
+  const statCards = [
+    { key: "users", label: t("admin.stats.users"), value: stats?.users ?? 0, icon: Users },
+    { key: "listings", label: t("admin.stats.listings"), value: stats?.listings ?? 0, icon: Building2 },
+    { key: "matches", label: t("admin.stats.matches"), value: stats?.matches ?? 0, icon: Heart },
+    { key: "notifications", label: t("admin.stats.notifications"), value: stats?.notifications ?? 0, icon: Bell },
+  ];
+
+  const queueLabels: Record<string, string> = {
+    collect: t("admin.queues.collect"),
+    match: t("admin.queues.match"),
+    notify: t("admin.queues.notify"),
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <h1 className="text-3xl font-extrabold">Admin Panel</h1>
+      <h1 className="text-3xl font-extrabold">{t("admin.title")}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Benutzer", value: stats?.users ?? 0, icon: Users },
-          {
-            label: "Anzeigen",
-            value: stats?.listings ?? 0,
-            icon: Building2,
-          },
-          { label: "Treffer", value: stats?.matches ?? 0, icon: Heart },
-          {
-            label: "Benachrichtigungen",
-            value: stats?.notifications ?? 0,
-            icon: Bell,
-          },
-        ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="card text-center">
+        {statCards.map(({ key, label, value, icon: Icon }) => (
+          <div key={key} className="card text-center">
             <Icon size={28} className="mx-auto text-primary mb-2" />
             <p className="text-3xl font-extrabold">{value.toLocaleString()}</p>
             <p className="text-lg text-muted-foreground">{label}</p>
@@ -95,7 +97,7 @@ export default function AdminPage() {
       </div>
 
       <div className="card">
-        <h2 className="text-2xl font-bold mb-4">Quellen</h2>
+        <h2 className="text-2xl font-bold mb-4">{t("admin.sources")}</h2>
         <div className="space-y-3">
           {sources.map((source) => (
             <div
@@ -105,7 +107,7 @@ export default function AdminPage() {
               <div>
                 <p className="text-lg font-semibold">{source.name}</p>
                 <p className="text-base text-muted-foreground">
-                  {source.listings_count} Anzeigen
+                  {source.listings_count} {t("admin.sources.listingsCount")}
                 </p>
               </div>
               <button
@@ -119,7 +121,9 @@ export default function AdminPage() {
                 ) : (
                   <ToggleLeft size={22} />
                 )}
-                {source.enabled ? "Aktiv" : "Pausiert"}
+                {source.enabled
+                  ? t("admin.sources.enabled")
+                  : t("admin.sources.disabled")}
               </button>
             </div>
           ))}
@@ -129,28 +133,23 @@ export default function AdminPage() {
       {queue && (
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold">Warteschlangen</h2>
+            <h2 className="text-2xl font-bold">{t("admin.queues")}</h2>
             <button onClick={fetchAll} className="btn btn-outline p-2">
               <RefreshCw size={20} />
             </button>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            {(
-              [
-                { key: "collect", label: "Sammeln" },
-                { key: "match", label: "Abgleich" },
-                { key: "notify", label: "Benachrichtigen" },
-              ] as const
-            ).map(({ key, label }) => {
+            {(["collect", "match", "notify"] as const).map((key) => {
               const q = queue[key];
               return (
                 <div key={key} className="text-center p-4 bg-muted rounded-lg">
-                  <p className="text-lg font-bold">{label}</p>
+                  <p className="text-lg font-bold">{queueLabels[key]}</p>
                   <p className="text-2xl font-extrabold">
                     {q.active + q.waiting}
                   </p>
                   <p className="text-base text-muted-foreground">
-                    {q.active} aktiv, {q.waiting} wartend
+                    {q.active} {t("common.active").toLowerCase()}, {q.waiting}{" "}
+                    {t("common.paused").toLowerCase()}
                   </p>
                 </div>
               );
@@ -160,14 +159,14 @@ export default function AdminPage() {
       )}
 
       <div className="card">
-        <h2 className="text-2xl font-bold mb-4">Letzte Aktivitäten</h2>
+        <h2 className="text-2xl font-bold mb-4">{t("admin.logs")}</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-lg">
             <thead>
               <tr className="border-b-2 border-border text-left">
-                <th className="py-3 pr-4 font-bold">Aktion</th>
-                <th className="py-3 pr-4 font-bold">Details</th>
-                <th className="py-3 font-bold">Zeit</th>
+                <th className="py-3 pr-4 font-bold">{t("admin.logs.action")}</th>
+                <th className="py-3 pr-4 font-bold">{t("admin.logs.details")}</th>
+                <th className="py-3 font-bold">{t("admin.logs.time")}</th>
               </tr>
             </thead>
             <tbody>
@@ -184,8 +183,11 @@ export default function AdminPage() {
               ))}
               {auditLogs.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="py-6 text-center text-muted-foreground">
-                    Keine Aktivitäten vorhanden
+                  <td
+                    colSpan={3}
+                    className="py-6 text-center text-muted-foreground"
+                  >
+                    {t("admin.logs.empty")}
                   </td>
                 </tr>
               )}

@@ -1,30 +1,30 @@
+"use client";
+
 import Link from "next/link";
 import { Search, Bell, Scale } from "lucide-react";
+import { useLocale } from "@/lib/i18n";
 
 export default function HomePage() {
+  const { t } = useLocale();
+
   return (
     <>
       <section className="py-16 sm:py-24 text-center">
         <div className="container max-w-3xl">
-          <h1 className="hero-title mb-6">
-            Finden Sie Ihre Traumwohnung
-          </h1>
-          <p className="hero-subtitle mx-auto mb-10">
-            Wir suchen für Sie — Sie erhalten Benachrichtigungen in Telegram.
-            Einfach, bequem und zuverlässig.
-          </p>
+          <h1 className="hero-title mb-6">{t("hero.title")}</h1>
+          <p className="hero-subtitle mx-auto mb-10">{t("hero.subtitle")}</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/register"
               className="btn btn-primary w-full sm:w-auto min-w-[240px] no-underline text-xl py-4 px-8"
             >
-              Jetzt registrieren
+              {t("hero.cta.register")}
             </Link>
             <Link
               href="/login"
               className="btn btn-outline w-full sm:w-auto min-w-[240px] no-underline text-xl py-4 px-8"
             >
-              Ich habe schon ein Konto
+              {t("hero.cta.login")}
             </Link>
           </div>
         </div>
@@ -33,7 +33,7 @@ export default function HomePage() {
       <section className="py-16 bg-muted">
         <div className="container">
           <h2 className="text-center text-2xl sm:text-3xl font-bold mb-12">
-            So funktioniert&apos;s
+            {t("hero.howItWorks")}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="card text-center">
@@ -42,13 +42,14 @@ export default function HomePage() {
                   <Search size={32} className="text-primary-foreground" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">Suchen</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {t("features.search.title")}
+              </h3>
               <p className="text-muted-foreground text-lg">
-                Geben Sie Ihre Kriterien ein — Stadt, Preis, Größe und mehr. Wir
-                durchsuchen alle großen Portale für Sie.
+                {t("features.search.long")}
               </p>
               <p className="text-accent-foreground text-base mt-2 font-medium">
-                Поиск — Укажите город, цену, площадь. Мы ищем на всех сайтах.
+                {t("features.search.ru")}
               </p>
             </div>
 
@@ -58,13 +59,14 @@ export default function HomePage() {
                   <Scale size={32} className="text-success-foreground" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">Vergleichen</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {t("features.compare.title")}
+              </h3>
               <p className="text-muted-foreground text-lg">
-                Sehen Sie alle passenden Wohnungen auf einen Blick. Vergleichen
-                Sie Preise, Größen und Lagen schnell und einfach.
+                {t("features.compare.long")}
               </p>
               <p className="text-accent-foreground text-base mt-2 font-medium">
-                Сравнение — Все варианты в одном месте. Цены, площадь, район.
+                {t("features.compare.ru")}
               </p>
             </div>
 
@@ -74,14 +76,14 @@ export default function HomePage() {
                   <Bell size={32} className="text-accent-foreground" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">Benachrichtigen</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {t("features.notify.title")}
+              </h3>
               <p className="text-muted-foreground text-lg">
-                Neue passende Angebote kommen direkt in Ihren Telegram-Chat. Sie
-                verpassen nie wieder eine gute Wohnung.
+                {t("features.notify.long")}
               </p>
               <p className="text-accent-foreground text-base mt-2 font-medium">
-                Уведомления — Новые квартиры сразу в Telegram. Ничего не
-                пропустите.
+                {t("features.notify.ru")}
               </p>
             </div>
           </div>
@@ -91,17 +93,16 @@ export default function HomePage() {
       <section className="py-16 text-center">
         <div className="container max-w-2xl">
           <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-            Bereit, Ihre Suche zu starten?
+            {t("hero.cta.bottomReady")}
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Erstellen Sie ein Konto in wenigen Sekunden und erhalten Sie sofort
-            passende Wohnungsangebote in Ihrem Telegram.
+            {t("hero.cta.bottomDesc")}
           </p>
           <Link
             href="/register"
             className="btn btn-secondary no-underline text-xl py-4 px-8 min-w-[240px]"
           >
-            Kostenlos starten
+            {t("hero.cta.bottom")}
           </Link>
         </div>
       </section>

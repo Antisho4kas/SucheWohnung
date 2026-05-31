@@ -13,8 +13,10 @@ import {
   SearchX,
 } from "lucide-react";
 import { api, type SearchProfile, type TelegramLinkResponse } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
 
 export default function DashboardPage() {
+  const { t } = useLocale();
   const [profiles, setProfiles] = useState<SearchProfile[]>([]);
   const [telegram, setTelegram] = useState<TelegramLinkResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,14 +24,14 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const [p, t] = await Promise.all([
+      const [p, tg] = await Promise.all([
         api.getProfiles(),
         api.getTelegramLink().catch(() => null),
       ]);
       setProfiles(p);
-      setTelegram(t);
+      setTelegram(tg);
     } catch {
-      setError("Daten konnten nicht geladen werden.");
+      setError(t("dashboard.profiles.loadError"));
     } finally {
       setLoading(false);
     }
@@ -51,24 +53,26 @@ export default function DashboardPage() {
         ),
       );
     } catch {
-      setError("Status konnte nicht geändert werden.");
+      setError(t("dashboard.profiles.statusError"));
     }
   };
 
   const deleteProfile = async (id: string) => {
-    if (!window.confirm("Suchprofil wirklich löschen?")) return;
+    if (!window.confirm(t("dashboard.profiles.confirmDelete"))) return;
     try {
       await api.deleteProfile(id);
       setProfiles((prev) => prev.filter((p) => p.id !== id));
     } catch {
-      setError("Profil konnte nicht gelöscht werden.");
+      setError(t("dashboard.profiles.deleteError"));
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-xl text-muted-foreground">Wird geladen...</p>
+        <p className="text-xl text-muted-foreground">
+          {t("dashboard.profiles.loading")}
+        </p>
       </div>
     );
   }
@@ -76,9 +80,9 @@ export default function DashboardPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-extrabold">Mein Dashboard</h1>
+        <h1 className="text-3xl font-extrabold">{t("dashboard.title")}</h1>
         <p className="text-lg text-muted-foreground mt-1">
-          Verwalten Sie Ihre Suchprofile und Benachrichtigungen
+          {t("dashboard.subtitle")}
         </p>
       </div>
 
@@ -95,12 +99,14 @@ export default function DashboardPage() {
               }`}
             />
             <span className="text-lg font-semibold">
-              Telegram:{" "}
+              {t("dashboard.telegram.title")}:{" "}
               {telegram?.connected ? (
-                <span className="text-success">Verbunden</span>
+                <span className="text-success">
+                  {t("dashboard.telegram.connected")}
+                </span>
               ) : (
                 <span className="text-muted-foreground">
-                  Nicht verbunden
+                  {t("dashboard.telegram.notConnected")}
                 </span>
               )}
             </span>
@@ -113,17 +119,20 @@ export default function DashboardPage() {
               className="btn btn-primary no-underline"
             >
               <LinkIcon size={20} />
-              Mit Telegram verbinden
+              {t("dashboard.telegram.connect")}
             </a>
           )}
         </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Suchprofile</h2>
-        <Link href="/dashboard/profiles/new" className="btn btn-secondary no-underline text-lg">
+        <h2 className="text-2xl font-bold">{t("dashboard.profiles")}</h2>
+        <Link
+          href="/dashboard/profiles/new"
+          className="btn btn-secondary no-underline text-lg"
+        >
           <Plus size={22} />
-          Neues Suchprofil
+          {t("dashboard.profiles.create")}
         </Link>
       </div>
 
@@ -131,18 +140,17 @@ export default function DashboardPage() {
         <div className="card text-center py-12">
           <SearchX size={64} className="mx-auto text-muted-foreground mb-4" />
           <h3 className="text-xl font-bold mb-2">
-            Noch keine Suchprofile
+            {t("dashboard.profiles.empty")}
           </h3>
           <p className="text-lg text-muted-foreground mb-6">
-            Erstellen Sie Ihr erstes Suchprofil und wir suchen passende
-            Wohnungen für Sie.
+            {t("dashboard.profiles.emptyDesc")}
           </p>
           <Link
             href="/dashboard/profiles/new"
             className="btn btn-primary no-underline text-xl"
           >
             <Plus size={22} />
-            Erstes Suchprofil erstellen
+            {t("dashboard.profiles.createFirst")}
           </Link>
         </div>
       ) : (
@@ -160,7 +168,9 @@ export default function DashboardPage() {
                           : "badge-warning"
                       }`}
                     >
-                      {profile.status === "active" ? "Aktiv" : "Pausiert"}
+                      {profile.status === "active"
+                        ? t("dashboard.profiles.active")
+                        : t("dashboard.profiles.paused")}
                     </span>
                   </div>
                   <p className="text-lg text-muted-foreground">
@@ -178,17 +188,23 @@ export default function DashboardPage() {
                     profile.pets) && (
                     <div className="flex flex-wrap gap-2 mt-1">
                       {profile.balcony && (
-                        <span className="badge badge-success">Balkon</span>
+                        <span className="badge badge-success">
+                          {t("profile.balcony")}
+                        </span>
                       )}
                       {profile.elevator && (
-                        <span className="badge badge-success">Aufzug</span>
+                        <span className="badge badge-success">
+                          {t("profile.elevator")}
+                        </span>
                       )}
                       {profile.parking && (
-                        <span className="badge badge-success">Parkplatz</span>
+                        <span className="badge badge-success">
+                          {t("profile.parking")}
+                        </span>
                       )}
                       {profile.pets && (
                         <span className="badge badge-success">
-                          Haustiere
+                          {t("profile.pets")}
                         </span>
                       )}
                     </div>
@@ -201,8 +217,8 @@ export default function DashboardPage() {
                     className="btn btn-outline p-3"
                     title={
                       profile.status === "active"
-                        ? "Pausieren"
-                        : "Aktivieren"
+                        ? t("dashboard.profiles.togglePause")
+                        : t("dashboard.profiles.toggleActive")
                     }
                   >
                     {profile.status === "active" ? (
@@ -214,21 +230,21 @@ export default function DashboardPage() {
                   <Link
                     href={`/dashboard/profiles/${profile.id}/matches`}
                     className="btn btn-outline p-3 no-underline"
-                    title="Treffer ansehen"
+                    title={t("dashboard.profiles.matches")}
                   >
                     <Eye size={22} />
                   </Link>
                   <Link
                     href={`/dashboard/profiles/${profile.id}/edit`}
                     className="btn btn-outline p-3 no-underline"
-                    title="Bearbeiten"
+                    title={t("dashboard.profiles.edit")}
                   >
                     <Pencil size={22} />
                   </Link>
                   <button
                     onClick={() => deleteProfile(profile.id)}
                     className="btn btn-danger p-3"
-                    title="Löschen"
+                    title={t("dashboard.profiles.delete")}
                   >
                     <Trash2 size={22} />
                   </button>

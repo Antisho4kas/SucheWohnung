@@ -3,10 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
+import { useLocale } from "@/lib/i18n";
 import { UserPlus } from "lucide-react";
 
 export default function RegisterPage() {
   const { register } = useAuth();
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -18,12 +20,12 @@ export default function RegisterPage() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Die Passwörter stimmen nicht überein.");
+      setError(t("register.passwordMismatch"));
       return;
     }
 
     if (password.length < 8) {
-      setError("Das Passwort muss mindestens 8 Zeichen lang sein.");
+      setError(t("register.passwordTooShort"));
       return;
     }
 
@@ -32,7 +34,7 @@ export default function RegisterPage() {
       await register(email, password);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Registrierung fehlgeschlagen";
+        err instanceof Error ? err.message : t("register.failed");
       setError(message);
     } finally {
       setLoading(false);
@@ -42,15 +44,17 @@ export default function RegisterPage() {
   return (
     <div className="card">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-extrabold mb-1">Registrieren</h1>
+        <h1 className="text-2xl font-extrabold mb-1">
+          {t("register.title")}
+        </h1>
         <p className="text-muted-foreground text-lg">
-          Erstellen Sie Ihr Konto bei SucheWohnung
+          {t("register.welcome")}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="form-group">
-          <label htmlFor="email">E-Mail-Adresse</label>
+          <label htmlFor="email">{t("register.email")}</label>
           <input
             id="email"
             type="email"
@@ -63,7 +67,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="password">Passwort</label>
+          <label htmlFor="password">{t("register.password")}</label>
           <input
             id="password"
             type="password"
@@ -77,7 +81,9 @@ export default function RegisterPage() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="confirm-password">Passwort bestätigen</label>
+          <label htmlFor="confirm-password">
+            {t("register.confirmPassword")}
+          </label>
           <input
             id="confirm-password"
             type="password"
@@ -97,7 +103,7 @@ export default function RegisterPage() {
           disabled={loading}
         >
           <UserPlus size={22} />
-          {loading ? "Konto wird erstellt..." : "Konto erstellen"}
+          {loading ? t("register.submitting") : t("register.submit")}
         </button>
       </form>
 
@@ -107,7 +113,7 @@ export default function RegisterPage() {
             href="/login"
             className="font-semibold no-underline hover:underline"
           >
-            Bereits registriert? Anmelden
+            {t("register.hasAccount")}
           </Link>
         </p>
       </div>

@@ -142,6 +142,14 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  kleinanzeigen-api:
+    image: ghcr.io/danielwte/ebay-kleinanzeigen-api:latest
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    environment:
+      HEADLESS: "true"
+
   nginx:
     image: nginx:alpine
     ports:

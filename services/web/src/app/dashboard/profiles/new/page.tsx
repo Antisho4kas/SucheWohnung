@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
 import { api } from "@/lib/api";
+import { useLocale } from "@/lib/i18n";
 
 export default function NewProfilePage() {
   const router = useRouter();
+  const { t } = useLocale();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -46,7 +48,7 @@ export default function NewProfilePage() {
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Profil konnte nicht erstellt werden",
+        err instanceof Error ? err.message : t("profile.createError"),
       );
     } finally {
       setLoading(false);
@@ -55,11 +57,13 @@ export default function NewProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-extrabold mb-6">Neues Suchprofil</h1>
+      <h1 className="text-3xl font-extrabold mb-6">
+        {t("dashboard.profiles.create")}
+      </h1>
 
       <form onSubmit={handleSubmit} className="card space-y-6">
         <div className="form-group">
-          <label htmlFor="name">Profilname</label>
+          <label htmlFor="name">{t("profile.name")}</label>
           <input
             id="name"
             type="text"
@@ -71,7 +75,7 @@ export default function NewProfilePage() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="city">Stadt</label>
+          <label htmlFor="city">{t("profile.city")}</label>
           <input
             id="city"
             type="text"
@@ -84,12 +88,12 @@ export default function NewProfilePage() {
 
         <fieldset className="form-group">
           <legend className="label font-semibold text-lg mb-2">
-            Preisspanne (€)
+            {t("profile.priceSpan")}
           </legend>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="price-min" className="text-base font-medium">
-                Min
+                {t("common.min")}
               </label>
               <input
                 id="price-min"
@@ -102,7 +106,7 @@ export default function NewProfilePage() {
             </div>
             <div>
               <label htmlFor="price-max" className="text-base font-medium">
-                Max
+                {t("common.max")}
               </label>
               <input
                 id="price-max"
@@ -118,12 +122,12 @@ export default function NewProfilePage() {
 
         <fieldset className="form-group">
           <legend className="label font-semibold text-lg mb-2">
-            Wohnfläche (m²)
+            {t("profile.areaSpan")}
           </legend>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="area-min" className="text-base font-medium">
-                Min
+                {t("common.min")}
               </label>
               <input
                 id="area-min"
@@ -136,7 +140,7 @@ export default function NewProfilePage() {
             </div>
             <div>
               <label htmlFor="area-max" className="text-base font-medium">
-                Max
+                {t("common.max")}
               </label>
               <input
                 id="area-max"
@@ -151,7 +155,7 @@ export default function NewProfilePage() {
         </fieldset>
 
         <div className="form-group">
-          <label htmlFor="rooms-min">Mindestens Zimmer</label>
+          <label htmlFor="rooms-min">{t("profile.roomsMin")}</label>
           <input
             id="rooms-min"
             type="number"
@@ -165,14 +169,14 @@ export default function NewProfilePage() {
 
         <fieldset className="form-group">
           <legend className="label font-semibold text-lg mb-2">
-            Ausstattung
+            {t("profile.amenities")}
           </legend>
           <div className="space-y-3">
             {[
-              { key: "balcony", label: "Balkon", value: balcony, setter: setBalcony },
-              { key: "elevator", label: "Aufzug", value: elevator, setter: setElevator },
-              { key: "parking", label: "Parkplatz / Garage", value: parking, setter: setParking },
-              { key: "pets", label: "Haustiere erlaubt", value: pets, setter: setPets },
+              { key: "balcony", label: t("profile.balcony"), value: balcony, setter: setBalcony },
+              { key: "elevator", label: t("profile.elevator"), value: elevator, setter: setElevator },
+              { key: "parking", label: t("profile.parkingLabel"), value: parking, setter: setParking },
+              { key: "pets", label: t("profile.pets"), value: pets, setter: setPets },
             ].map(({ key, label, value, setter }) => (
               <label
                 key={key}
@@ -198,7 +202,7 @@ export default function NewProfilePage() {
               onChange={(e) => setNotificationsEnabled(e.target.checked)}
               className="w-5 h-5 accent-primary"
             />
-            Benachrichtigungen aktivieren
+            {t("profile.notify")}
           </label>
         </div>
 
@@ -210,7 +214,7 @@ export default function NewProfilePage() {
           disabled={loading}
         >
           <Save size={22} />
-          {loading ? "Wird gespeichert..." : "Profil speichern"}
+          {loading ? t("profile.submitting") : t("profile.submit")}
         </button>
       </form>
     </div>

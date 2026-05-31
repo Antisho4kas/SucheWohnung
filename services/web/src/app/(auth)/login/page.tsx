@@ -3,10 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
+import { useLocale } from "@/lib/i18n";
 import { LogIn } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,7 +22,7 @@ export default function LoginPage() {
       await login(email, password);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Anmeldung fehlgeschlagen";
+        err instanceof Error ? err.message : t("login.failed");
       setError(message);
     } finally {
       setLoading(false);
@@ -30,15 +32,15 @@ export default function LoginPage() {
   return (
     <div className="card">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-extrabold mb-1">Anmelden</h1>
+        <h1 className="text-2xl font-extrabold mb-1">{t("login.title")}</h1>
         <p className="text-muted-foreground text-lg">
-          Willkommen zurück bei SucheWohnung
+          {t("login.welcome")}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="form-group">
-          <label htmlFor="email">E-Mail-Adresse</label>
+          <label htmlFor="email">{t("login.email")}</label>
           <input
             id="email"
             type="email"
@@ -51,7 +53,7 @@ export default function LoginPage() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="password">Passwort</label>
+          <label htmlFor="password">{t("login.password")}</label>
           <input
             id="password"
             type="password"
@@ -71,7 +73,7 @@ export default function LoginPage() {
           disabled={loading}
         >
           <LogIn size={22} />
-          {loading ? "Wird angemeldet..." : "Anmelden"}
+          {loading ? t("login.submitting") : t("login.submit")}
         </button>
       </form>
 
@@ -81,7 +83,7 @@ export default function LoginPage() {
             href="/register"
             className="font-semibold no-underline hover:underline"
           >
-            Noch kein Konto? Registrieren
+            {t("login.noAccount")}
           </Link>
         </p>
         <p>
@@ -89,7 +91,7 @@ export default function LoginPage() {
             href="/forgot-password"
             className="text-muted-foreground no-underline hover:underline"
           >
-            Passwort vergessen?
+            {t("login.forgotPassword")}
           </Link>
         </p>
       </div>

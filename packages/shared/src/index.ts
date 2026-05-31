@@ -18,3 +18,4 @@ export * from "./ingestion/quality-gate.js";
 // Connectors
 export * from "./connectors/contract.js";
 export * from "./connectors/mock-connector.js";
+export { KleinanzeigenConnector, KLEINANZEIGEN_SOURCE_SLUG } from "./connectors/kleinanzeigen-connector.js";

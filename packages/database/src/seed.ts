@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import {
   SEED_FILTER_DEFINITIONS,
   MOCK_SOURCE_SLUG,
+  KLEINANZEIGEN_SOURCE_SLUG,
 } from "@suchewohnung/shared";
 
 /**
@@ -49,6 +50,21 @@ async function main(): Promise<void> {
     },
   });
   console.log("Seeded mock source.");
+
+  await prisma.source.upsert({
+    where: { slug: KLEINANZEIGEN_SOURCE_SLUG },
+    update: {},
+    create: {
+      slug: KLEINANZEIGEN_SOURCE_SLUG,
+      name: "eBay Kleinanzeigen",
+      integrationType: "scrape",
+      isActive: false,
+      scheduleCron: "*/15 * * * *",
+      rateLimitRpm: 10,
+      config: { city: "berlin", minPrice: 0, maxPrice: 2000, minArea: 20, maxArea: 200, minRooms: 1, maxPages: 3 } as Prisma.InputJsonValue,
+    },
+  });
+  console.log("Seeded kleinanzeigen source.");
 }
 
 main()
