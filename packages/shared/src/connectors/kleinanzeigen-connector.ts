@@ -27,7 +27,7 @@ export class KleinanzeigenConnector implements SourceConnector {
     }
   }
 
-  async *fetch(ctx: ConnectorContext, opts: FetchOptions): AsyncIterable<RawListing> {
+  async *fetch(ctx: ConnectorContext, _opts: FetchOptions): AsyncIterable<RawListing> {
     const city = (ctx.config.city as string) ?? "berlin";
     const minPrice = (ctx.config.minPrice as number) ?? 0;
     const maxPrice = (ctx.config.maxPrice as number) ?? 2000;
