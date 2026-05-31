@@ -1,0 +1,59 @@
+import { PrismaClient } from "./generated/client/index.js";
+import {
+  SEED_FILTER_DEFINITIONS,
+  MOCK_SOURCE_SLUG,
+} from "@suchewohnung/shared";
+
+/**
+ * Seed: base filter_definitions (schema-driven, §10.2) + a demo mock source
+ * (§5.7, §7.7) so the platform is end-to-end runnable on Stage 1 with no real
+ * source. Idempotent (upsert by unique key).
+ */
+const prisma = new PrismaClient();
+
+async function main(): Promise<void> {
+  for (const def of SEED_FILTER_DEFINITIONS) {
+    await prisma.filterDefinition.upsert({
+      where: { key: def.key },
+      update: {
+        label: def.label,
+        dataType: def.dataType,
+        operatorSet: [...def.operatorSet],
+        config: def.config ?? {},
+        isActive: def.isActive ?? true,
+      },
+      create: {
+        key: def.key,
+        label: def.label,
+        dataType: def.dataType,
+        operatorSet: [...def.operatorSet],
+        config: def.config ?? {},
+        isActive: def.isActive ?? true,
+      },
+    });
+  }
+  console.log(`Seeded ${SEED_FILTER_DEFINITIONS.length} filter definitions.`);
+
+  await prisma.source.upsert({
+    where: { slug: MOCK_SOURCE_SLUG },
+    update: {},
+    create: {
+      slug: MOCK_SOURCE_SLUG,
+      name: "Mock Source (dev)",
+      integrationType: "api",
+      isActive: true,
+      scheduleCron: "*/5 * * * *",
+      rateLimitRpm: 120,
+      config: { mock: true, itemsPerRun: 25 },
+    },
+  });
+  console.log("Seeded mock source.");
+}
+
+main()
+  .then(() => prisma.$disconnect())
+  .catch(async (e) => {
+    console.error(e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });

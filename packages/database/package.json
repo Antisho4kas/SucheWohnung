@@ -1,0 +1,31 @@
+{
+  "name": "@suchewohnung/database",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b && npx shx rm -rf dist/generated && npx shx cp -r src/generated dist/generated",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
+    "seed": "node --experimental-strip-types src/seed.ts",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@suchewohnung/shared": "*"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}

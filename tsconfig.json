@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/database" },
+    { "path": "services/api" },
+    { "path": "services/worker" },
+    { "path": "services/bot" }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "suchewohnung",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SucheWohnung — Aggregator for German apartment listings with Telegram notifications",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write .",
+    "db:generate": "npm run -w @suchewohnung/database generate",
+    "db:migrate": "npm run -w @suchewohnung/database migrate",
+    "db:seed": "npm run -w @suchewohnung/database seed",
+    "dev:api": "npm run -w @suchewohnung/api dev",
+    "dev:worker": "npm run -w @suchewohnung/worker dev",
+    "dev:bot": "npm run -w @suchewohnung/bot dev"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/nodemailer": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "shx": "^0.4.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

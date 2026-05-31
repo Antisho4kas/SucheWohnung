@@ -1,0 +1,25 @@
+{
+  "name": "@suchewohnung/worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "worker:collect": "node dist/workers/collect.js",
+    "worker:match": "node dist/workers/match.js",
+    "worker:notify": "node dist/workers/notify.js",
+    "worker:scheduler": "node dist/workers/scheduler.js"
+  },
+  "dependencies": {
+    "@suchewohnung/database": "1.0.0",
+    "@suchewohnung/shared": "1.0.0",
+    "bullmq": "^5.77.6",
+    "grammy": "^1.35.0",
+    "ioredis": "^5.11.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.3"
+  }
+}

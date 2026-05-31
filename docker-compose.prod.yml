@@ -1,0 +1,140 @@
+# Production Docker Compose — pulls pre-built images from GHCR
+# Usage: docker compose -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: suchewohnung
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-app}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/api:latest
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-collect:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/worker:latest
+    command: ["node", "dist/workers/collect.js"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-match:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/worker:latest
+    command: ["node", "dist/workers/match.js"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-notify:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/worker:latest
+    command: ["node", "dist/workers/notify.js"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  scheduler:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/worker:latest
+    command: ["node", "dist/workers/scheduler.js"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  bot:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/bot:latest
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/web:latest
+    env_file: .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "3000:3000"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+      - api
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
