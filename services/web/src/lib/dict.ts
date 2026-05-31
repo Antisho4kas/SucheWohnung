@@ -231,6 +231,12 @@ const ru: DictShape = {
   "dashboard.telegram.connected": "Подключён",
   "dashboard.telegram.notConnected": "Не подключён",
   "dashboard.telegram.connect": "Подключить Telegram",
+  "dashboard.telegram.copyLink": "Копировать ссылку",
+  "dashboard.telegram.linkCopied": "Ссылка скопирована!",
+  "dashboard.telegram.connectedNote": "Telegram подключён. Уведомления будут приходить прямо в ваш чат.",
+  "dashboard.telegram.notConnectedNote": "Подключите Telegram для получения уведомлений.",
+  "dashboard.telegram.howToConnect": "Нажмите на ссылку или скопируйте её и откройте в Telegram. Запустите бота командой /start.",
+  "dashboard.telegram.checking": "Проверка подключения...",
   "dashboard.profiles": "Поисковые профили",
   "dashboard.profiles.empty": "Пока нет поисковых профилей",
   "dashboard.profiles.emptyDesc":

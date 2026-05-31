@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1";
 
 function getToken(): string | null {
   try {
@@ -43,7 +43,12 @@ async function request<T>(
     );
   }
 
-  return res.json() as Promise<T>;
+  const json = await res.json() as { data?: T } | T;
+  // Unwrap { data: ... } envelope if present
+  if (json && typeof json === "object" && "data" in json) {
+    return (json as { data: T }).data;
+  }
+  return json as T;
 }
 
 export interface LoginPayload {
