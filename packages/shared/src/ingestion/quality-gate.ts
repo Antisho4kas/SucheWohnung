@@ -1,3 +1,4 @@
+import type { ZodIssue } from "zod";
 import {
   NormalizedListingSchema,
   type NormalizedListing,
@@ -20,7 +21,7 @@ export function runQualityGate(raw: unknown): QualityResult {
     return {
       ok: false,
       issues: parsed.error.issues.map(
-        (i) => `${i.path.join(".") || "(root)"}: ${i.message}`,
+        (i: ZodIssue) => `${i.path.join(".") || "(root)"}: ${i.message}`,
       ),
     };
   }

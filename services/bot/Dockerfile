@@ -4,11 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-# Build in explicit dependency order: shared → database → bot
-RUN cd packages/shared && npm run build
-RUN cd packages/database && npx prisma generate
-RUN cd packages/database && npm run build
-RUN cd services/bot && npm run build
+RUN npm run db:generate
+RUN npm run build
 RUN npm prune --omit=dev
 
 FROM node:22-bookworm-slim AS runtime

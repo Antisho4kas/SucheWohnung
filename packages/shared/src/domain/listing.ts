@@ -61,7 +61,7 @@ export const NormalizedListingSchema = z
     images: z.array(ListingImageSchema).default([]),
     raw: z.unknown().optional(),
   })
-  .refine((l) => l.price !== undefined || l.warmRent !== undefined, {
+  .refine((l: { price?: number | undefined; warmRent?: number | undefined }) => l.price !== undefined || l.warmRent !== undefined, {
     message: "At least one of price or warmRent is required",
     path: ["price"],
   });
