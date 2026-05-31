@@ -14,6 +14,8 @@ export default function NewProfilePage() {
 
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [radiusKm, setRadiusKm] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [areaMin, setAreaMin] = useState("");
@@ -33,7 +35,9 @@ export default function NewProfilePage() {
     try {
       await api.createProfile({
         name,
-        city,
+        city: city || undefined,
+        postal_code: postalCode || undefined,
+        radius_km: radiusKm ? Number(radiusKm) : undefined,
         price_min: priceMin ? Number(priceMin) : undefined,
         price_max: priceMax ? Number(priceMax) : undefined,
         area_min: areaMin ? Number(areaMin) : undefined,
@@ -82,8 +86,33 @@ export default function NewProfilePage() {
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="z.B. Berlin"
-            required
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="form-group">
+            <label htmlFor="postal-code">{t("profile.postalCode")}</label>
+            <input
+              id="postal-code"
+              type="text"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+              placeholder="z.B. 10115"
+              maxLength={5}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="radius">{t("profile.radius")}</label>
+            <input
+              id="radius"
+              type="number"
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(e.target.value)}
+              placeholder={t("profile.radiusPlaceholder")}
+              min={0}
+              max={100}
+            />
+          </div>
         </div>
 
         <fieldset className="form-group">

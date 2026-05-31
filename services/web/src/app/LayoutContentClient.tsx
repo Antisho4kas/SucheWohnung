@@ -53,7 +53,7 @@ export default function LayoutContentClient({
         </div>
       </header>
 
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-12">{children}</main>
 
       <footer className="border-t-2 border-border bg-card mt-auto">
         <div className="container py-8">

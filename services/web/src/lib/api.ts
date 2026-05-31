@@ -80,6 +80,8 @@ export interface SearchProfile {
   notify: boolean;
   criteria: Record<string, unknown>;
   city: string;
+  postal_code: string;
+  radius_km: number | null;
   price_min: number | null;
   price_max: number | null;
   area_min: number | null;
@@ -97,6 +99,8 @@ export interface SearchProfile {
 export interface CreateProfilePayload {
   name: string;
   city?: string;
+  postal_code?: string;
+  radius_km?: number;
   price_min?: number;
   price_max?: number;
   area_min?: number;
@@ -118,6 +122,10 @@ interface FilterInput {
 function buildFilters(payload: CreateProfilePayload): FilterInput[] {
   const filters: FilterInput[] = [];
   if (payload.city) filters.push({ key: "city", operator: "eq", value: payload.city });
+  if (payload.postal_code) filters.push({ key: "postal_code", operator: "eq", value: payload.postal_code });
+  if (payload.radius_km && payload.radius_km > 0 && (payload.city || payload.postal_code)) {
+    filters.push({ key: "location", operator: "within", value: { city: payload.city, postalCode: payload.postal_code, radiusKm: payload.radius_km } });
+  }
   if (payload.price_min != null) filters.push({ key: "price", operator: "gte", value: payload.price_min });
   if (payload.price_max != null) filters.push({ key: "price", operator: "lte", value: payload.price_max });
   if (payload.area_min != null) filters.push({ key: "area", operator: "gte", value: payload.area_min });
@@ -132,6 +140,7 @@ function buildFilters(payload: CreateProfilePayload): FilterInput[] {
 
 function mapProfile(raw: Record<string, unknown>): SearchProfile {
   const criteria = (raw.criteria ?? {}) as Record<string, unknown>;
+  const locationData = criteria.location as Record<string, unknown> | undefined;
   return {
     id: String(raw.id ?? ""),
     name: String(raw.name ?? ""),
@@ -139,6 +148,8 @@ function mapProfile(raw: Record<string, unknown>): SearchProfile {
     notify: Boolean(raw.notify) || String(raw.notify) === "true",
     criteria,
     city: String(criteria.city ?? raw.city ?? ""),
+    postal_code: String(criteria.postalCode ?? locationData?.postalCode ?? ""),
+    radius_km: locationData?.radiusKm != null ? Number(locationData.radiusKm) : null,
     price_min: criteria.price_gte != null ? Number(criteria.price_gte) : null,
     price_max: criteria.price_lte != null ? Number(criteria.price_lte) : null,
     area_min: criteria.area_gte != null ? Number(criteria.area_gte) : null,
