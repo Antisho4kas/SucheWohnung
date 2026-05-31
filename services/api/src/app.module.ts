@@ -2,7 +2,6 @@ import { Module, MiddlewareConsumer, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD, APP_PIPE } from "@nestjs/core";
 import { ZodValidationPipe } from "nestjs-zod";
-import { loadConfig } from "./config/configuration.js";
 import { PrismaModule } from "./prisma/prisma.module.js";
 import { QueueModule } from "./queue/queue.service.js";
 import { MetricsModule } from "./metrics/metrics.module.js";
