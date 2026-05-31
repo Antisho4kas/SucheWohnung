@@ -4,7 +4,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run db:generate
 RUN npm run build -w @suchewohnung/shared
 RUN npm run build -w @suchewohnung/database
 RUN npm run build -w @suchewohnung/web

@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run db:generate
+RUN npx --yes prisma generate --schema=packages/database/prisma/schema.prisma
 RUN npm run build -w @suchewohnung/shared
 RUN npm run build -w @suchewohnung/database
 RUN npm run build -w @suchewohnung/worker
