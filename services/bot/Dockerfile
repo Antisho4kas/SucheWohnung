@@ -4,8 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+RUN npm run db:generate
 RUN npm run build
-RUN cd packages/database && npx prisma generate
 RUN npm prune --omit=dev
 
 FROM node:22-bookworm-slim AS runtime
