@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import {
   SEED_FILTER_DEFINITIONS,
@@ -19,7 +20,7 @@ async function main(): Promise<void> {
         label: def.label,
         dataType: def.dataType,
         operatorSet: [...def.operatorSet],
-        config: def.config ?? {},
+        config: (def.config ?? {}) as Prisma.InputJsonValue,
         isActive: def.isActive ?? true,
       },
       create: {
@@ -27,7 +28,7 @@ async function main(): Promise<void> {
         label: def.label,
         dataType: def.dataType,
         operatorSet: [...def.operatorSet],
-        config: def.config ?? {},
+        config: (def.config ?? {}) as Prisma.InputJsonValue,
         isActive: def.isActive ?? true,
       },
     });
