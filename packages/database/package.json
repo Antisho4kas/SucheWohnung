@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -b && npx shx rm -rf dist/generated && npx shx cp -r src/generated dist/generated",
+    "build": "tsc -b",
     "generate": "prisma generate",
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
