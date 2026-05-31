@@ -50,7 +50,7 @@ export default function EditProfilePage() {
         setElevator(found.elevator);
         setParking(found.parking);
         setPets(found.pets);
-        setNotificationsEnabled(found.notifications_enabled);
+        setNotificationsEnabled(found.notify);
       })
       .catch(() => setError("Profil konnte nicht geladen werden."))
       .finally(() => setLoading(false));
@@ -74,7 +74,7 @@ export default function EditProfilePage() {
         elevator,
         parking,
         pets,
-        notifications_enabled: notificationsEnabled,
+        notify: notificationsEnabled,
       });
       router.push("/dashboard");
     } catch (err: unknown) {

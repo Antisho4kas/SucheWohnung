@@ -2,40 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Search,
-  Settings,
-  Send,
-  LogOut,
-  Menu,
-  X,
-} from "lucide-react";
+import { LayoutDashboard, Send, LogOut, Menu, X, Plus } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useLocale } from "@/lib/i18n";
 
-const navItems = [
-  { href: "/dashboard", label: "Übersicht", icon: LayoutDashboard },
-  { href: "/dashboard/profiles/new", label: "Suche", icon: Search },
-  { href: "/dashboard/settings", label: "Einstellungen", icon: Settings },
-  { href: "/dashboard/telegram", label: "Telegram", icon: Send },
-];
-
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { t } = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navItems = [
+    { href: "/dashboard", label: t("dashboard.profiles"), icon: LayoutDashboard },
+    { href: "/dashboard/profiles/new", label: t("dashboard.profiles.create"), icon: Plus },
+    { href: "/dashboard/telegram", label: t("dashboard.telegram.title"), icon: Send },
+  ];
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
       <button
         className="md:hidden fixed top-16 left-0 z-40 btn btn-outline m-2 p-3"
         onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label="Menü öffnen"
+        aria-label="Menu"
       >
         {mobileOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -79,7 +68,7 @@ export default function DashboardLayout({
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-lg font-semibold text-destructive hover:bg-muted w-full no-underline transition-colors"
             >
               <LogOut size={22} />
-              Abmelden
+              {t("nav.logout")}
             </button>
           </div>
         </div>

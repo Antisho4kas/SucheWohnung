@@ -43,7 +43,7 @@ export default function NewProfilePage() {
         elevator,
         parking,
         pets,
-        notifications_enabled: notificationsEnabled,
+        notify: notificationsEnabled,
       });
       router.push("/dashboard");
     } catch (err: unknown) {

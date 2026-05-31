@@ -76,6 +76,9 @@ export interface User {
 export interface SearchProfile {
   id: string;
   name: string;
+  isActive: boolean;
+  notify: boolean;
+  criteria: Record<string, unknown>;
   city: string;
   price_min: number | null;
   price_max: number | null;
@@ -86,15 +89,14 @@ export interface SearchProfile {
   elevator: boolean;
   parking: boolean;
   pets: boolean;
-  notifications_enabled: boolean;
   status: "active" | "suspended";
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateProfilePayload {
   name: string;
-  city: string;
+  city?: string;
   price_min?: number;
   price_max?: number;
   area_min?: number;
@@ -104,23 +106,66 @@ export interface CreateProfilePayload {
   elevator?: boolean;
   parking?: boolean;
   pets?: boolean;
-  notifications_enabled?: boolean;
+  notify?: boolean;
+}
+
+interface FilterInput {
+  key: string;
+  operator: string;
+  value?: unknown;
+}
+
+function buildFilters(payload: CreateProfilePayload): FilterInput[] {
+  const filters: FilterInput[] = [];
+  if (payload.city) filters.push({ key: "city", operator: "eq", value: payload.city });
+  if (payload.price_min != null) filters.push({ key: "price", operator: "gte", value: payload.price_min });
+  if (payload.price_max != null) filters.push({ key: "price", operator: "lte", value: payload.price_max });
+  if (payload.area_min != null) filters.push({ key: "area", operator: "gte", value: payload.area_min });
+  if (payload.area_max != null) filters.push({ key: "area", operator: "lte", value: payload.area_max });
+  if (payload.rooms_min != null) filters.push({ key: "rooms", operator: "gte", value: payload.rooms_min });
+  if (payload.balcony) filters.push({ key: "balcony", operator: "eq", value: true });
+  if (payload.elevator) filters.push({ key: "elevator", operator: "eq", value: true });
+  if (payload.parking) filters.push({ key: "parking", operator: "eq", value: true });
+  if (payload.pets) filters.push({ key: "pets_allowed", operator: "eq", value: true });
+  return filters;
+}
+
+function mapProfile(raw: Record<string, unknown>): SearchProfile {
+  const criteria = (raw.criteria ?? {}) as Record<string, unknown>;
+  return {
+    id: String(raw.id ?? ""),
+    name: String(raw.name ?? ""),
+    isActive: Boolean(raw.isActive) || String(raw.isActive) === "true",
+    notify: Boolean(raw.notify) || String(raw.notify) === "true",
+    criteria,
+    city: String(criteria.city ?? raw.city ?? ""),
+    price_min: criteria.price_gte != null ? Number(criteria.price_gte) : null,
+    price_max: criteria.price_lte != null ? Number(criteria.price_lte) : null,
+    area_min: criteria.area_gte != null ? Number(criteria.area_gte) : null,
+    area_max: criteria.area_lte != null ? Number(criteria.area_lte) : null,
+    rooms_min: criteria.rooms_gte != null ? Number(criteria.rooms_gte) : null,
+    balcony: criteria.balcony === "true" || criteria.balcony === true,
+    elevator: criteria.elevator === "true" || criteria.elevator === true,
+    parking: criteria.parking === "true" || criteria.parking === true,
+    pets: criteria.pets_allowed === "true" || criteria.pets_allowed === true,
+    status: (raw.isActive ? "active" : "suspended") as "active" | "suspended",
+    createdAt: String(raw.createdAt ?? ""),
+    updatedAt: String(raw.updatedAt ?? ""),
+  };
 }
 
 export interface Match {
   id: string;
-  listing_id: string;
-  profile_id: string;
-  score: number;
-  notified_at: string | null;
-  seen_at: string | null;
-  created_at: string;
+  profileId: string;
+  listingId: string;
+  matchedAt: string;
+  state: string;
   listing?: {
+    id: string;
     title: string;
     url: string;
-    price: number;
+    price: string;
     city: string;
-    created_at: string;
   };
 }
 
@@ -172,31 +217,53 @@ export const api = {
 
   getMe: () => request<User>("/auth/me"),
 
-  getProfiles: () => request<SearchProfile[]>("/profiles"),
+  getProfiles: async (): Promise<SearchProfile[]> => {
+    const data = await request<Record<string, unknown>[]>("/profiles");
+    return (data ?? []).map(mapProfile);
+  },
 
-  createProfile: (payload: CreateProfilePayload) =>
-    request<SearchProfile>("/profiles", {
+  createProfile: async (payload: CreateProfilePayload) => {
+    const body = {
+      name: payload.name,
+      notify: payload.notify ?? true,
+      filters: buildFilters(payload),
+    };
+    const data = await request<Record<string, unknown>>("/profiles", {
       method: "POST",
-      body: JSON.stringify(payload),
-    }),
+      body: JSON.stringify(body),
+    });
+    return mapProfile(data);
+  },
 
-  updateProfile: (id: string, payload: CreateProfilePayload) =>
-    request<SearchProfile>(`/profiles/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    }),
+  updateProfile: async (id: string, payload: CreateProfilePayload) => {
+    const body = {
+      name: payload.name,
+      notify: payload.notify,
+      filters: buildFilters(payload),
+    };
+    const data = await request<Record<string, unknown>>(`/profiles/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+    return mapProfile(data);
+  },
 
   deleteProfile: (id: string) =>
-    request<void>(`/profiles/${id}`, {
-      method: "DELETE",
-    }),
+    request<void>(`/profiles/${id}`, { method: "DELETE" }),
 
-  getMatches: (profileId?: string) => {
+  getMatches: async (profileId?: string) => {
     const qs = profileId ? `?profile_id=${profileId}` : "";
     return request<Match[]>(`/matches${qs}`);
   },
 
-  getTelegramLink: () => request<TelegramLinkResponse>("/telegram/link"),
+  getTelegramLink: async (): Promise<TelegramLinkResponse> => {
+    try {
+      const data = await request<{ url?: string; token?: string; connected?: boolean }>("/telegram/link");
+      return { link: data?.url ?? "", connected: data?.connected ?? !!data?.token };
+    } catch {
+      return { link: "", connected: false };
+    }
+  },
 
   getAdminStats: () => request<AdminStats>("/admin/stats"),
 
