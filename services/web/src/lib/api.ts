@@ -1,8 +1,11 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
 
 function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("auth_token");
+  try {
+    return localStorage.getItem("auth_token");
+  } catch {
+    return null;
+  }
 }
 
 class ApiError extends Error {
@@ -33,14 +36,14 @@ async function request<T>(
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body = await res.json().catch(() => ({ message: `Request failed with status ${res.status}` })) as Record<string, unknown>;
     throw new ApiError(
-      body?.message ?? body?.error ?? `Request failed with status ${res.status}`,
+      String(body.message ?? body.error ?? `Request failed with status ${res.status}`),
       res.status,
     );
   }
 
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 export interface LoginPayload {
