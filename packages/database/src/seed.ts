@@ -45,7 +45,7 @@ async function main(): Promise<void> {
       isActive: true,
       scheduleCron: "*/5 * * * *",
       rateLimitRpm: 120,
-      config: { mock: true, itemsPerRun: 25 },
+      config: { mock: true, itemsPerRun: 25 } as Prisma.InputJsonValue,
     },
   });
   console.log("Seeded mock source.");
