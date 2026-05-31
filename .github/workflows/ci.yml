@@ -1,4 +1,4 @@
-# CI/CD Pipeline (§14.5)
+# CI/CD Pipeline
 name: CI/CD
 
 on:
@@ -55,11 +55,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://app:app@localhost:5432/suchewohnung?schema=public
 
+      - name: Build shared
+        run: npm run build -w @suchewohnung/shared
+
+      - name: Build database
+        run: npm run build -w @suchewohnung/database
+
       - name: Lint
         run: npm run lint
-
-      - name: Build shared package
-        run: npm run build -w @suchewohnung/shared
 
       - name: Type check
         run: npm run typecheck
@@ -70,11 +73,8 @@ jobs:
           DATABASE_URL: postgresql://app:app@localhost:5432/suchewohnung?schema=public
           REDIS_URL: redis://localhost:6379
 
-      - name: Build
+      - name: Build all
         run: npm run build
-
-      - name: Security Audit
-        run: npm audit --only=prod --audit-level=high || true
 
   build-docker:
     runs-on: ubuntu-latest

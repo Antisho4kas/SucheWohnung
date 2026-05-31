@@ -5,7 +5,9 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run db:generate
-RUN npm run build
+RUN npm run build -w @suchewohnung/shared
+RUN npm run build -w @suchewohnung/database
+RUN npm run build -w @suchewohnung/bot
 RUN npm prune --omit=dev
 
 FROM node:22-bookworm-slim AS runtime

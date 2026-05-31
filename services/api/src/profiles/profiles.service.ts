@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { buildCriteria, type ProfileFilter } from "@suchewohnung/shared";
+import type { CreateProfileDto, UpdateProfileDto } from "./dto.js";
 
 interface FilterInput {
   key: string;
@@ -59,7 +60,7 @@ export class ProfilesService {
     }
   }
 
-  async create(userId: string, dto: { name: string; notify?: boolean; filters: FilterInput[] }) {
+  async create(userId: string, dto: CreateProfileDto) {
     await this.validateFilters(dto.filters);
 
     // BR-3: enforce per-plan profile limit.
@@ -116,7 +117,7 @@ export class ProfilesService {
   async update(
     userId: string,
     id: string,
-    dto: { name?: string; notify?: boolean; is_active?: boolean; filters?: FilterInput[] },
+    dto: UpdateProfileDto,
   ) {
     await this.get(userId, id);
     if (dto.filters) await this.validateFilters(dto.filters);

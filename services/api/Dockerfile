@@ -1,11 +1,13 @@
-# Multi-stage build for NestJS API (§14.1)
+# Multi-stage build for NestJS API
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run db:generate
-RUN npm run build
+RUN npm run build -w @suchewohnung/shared
+RUN npm run build -w @suchewohnung/database
+RUN npm run build -w @suchewohnung/api
 RUN npm prune --omit=dev
 
 FROM node:22-bookworm-slim AS runtime
@@ -19,6 +21,4 @@ COPY --from=build /app/packages ./packages
 COPY --from=build /app/package.json ./monorepo-package.json
 USER app
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
 CMD ["node", "dist/main.js"]

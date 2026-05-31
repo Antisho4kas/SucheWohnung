@@ -1,12 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "Node",
     "outDir": "./dist",
     "rootDir": "./src",
-    "composite": false,
-    "types": ["node"]
+    "paths": {
+      "@suchewohnung/shared": ["../../packages/shared/src/index.ts"],
+      "@suchewohnung/database": ["../../packages/database/src/index.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules", "**/*.test.ts"]

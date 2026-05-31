@@ -14,5 +14,5 @@ export const ROLE_RANK: Record<UserRole, number> = {
 };
 
 export function roleSatisfies(actual: UserRole, required: UserRole): boolean {
-  return ROLE_RANK[actual] >= ROLE_RANK[required];
+  return (ROLE_RANK[actual] ?? 0) >= (ROLE_RANK[required] ?? 0);
 }
