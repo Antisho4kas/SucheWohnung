@@ -5,10 +5,10 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 # Build in explicit dependency order: shared → database → web
-RUN npm run -w @suchewohnung/shared build
+RUN cd packages/shared && npm run build
 RUN cd packages/database && npx prisma generate
-RUN npm run -w @suchewohnung/database build
-RUN npm run -w @suchewohnung/web build
+RUN cd packages/database && npm run build
+RUN cd services/web && npm run build
 RUN npm prune --omit=dev
 
 FROM node:22-bookworm-slim AS runtime
