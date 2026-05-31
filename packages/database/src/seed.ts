@@ -1,4 +1,4 @@
-import { PrismaClient } from "./generated/client/index.js";
+import { PrismaClient } from "@prisma/client";
 import {
   SEED_FILTER_DEFINITIONS,
   MOCK_SOURCE_SLUG,
