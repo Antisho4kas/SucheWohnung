@@ -69,7 +69,7 @@ jobs:
         run: npm run build
 
       - name: SCA
-        run: npm audit --audit-level=moderate
+        run: npm audit --audit-level=high
 
   build-docker:
     runs-on: ubuntu-latest
