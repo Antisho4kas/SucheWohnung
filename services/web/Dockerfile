@@ -1,9 +1,8 @@
 # Multi-stage build for Next.js frontend
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
 COPY . .
+RUN npm ci
 RUN npm run build -w @suchewohnung/shared
 RUN npm run build -w @suchewohnung/database
 RUN npm run build -w @suchewohnung/web
