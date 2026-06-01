@@ -4,6 +4,8 @@ import {
   SEED_FILTER_DEFINITIONS,
   MOCK_SOURCE_SLUG,
   KLEINANZEIGEN_SOURCE_SLUG,
+  IMMOWELT_SOURCE_SLUG,
+  IMMOSCOUT_SOURCE_SLUG,
 } from "@suchewohnung/shared";
 
 /**
@@ -65,6 +67,36 @@ async function main(): Promise<void> {
     },
   });
   console.log("Seeded kleinanzeigen source.");
+
+  await prisma.source.upsert({
+    where: { slug: IMMOWELT_SOURCE_SLUG },
+    update: {},
+    create: {
+      slug: IMMOWELT_SOURCE_SLUG,
+      name: "Immowelt",
+      integrationType: "scrape",
+      isActive: false,
+      scheduleCron: "*/30 * * * *",
+      rateLimitRpm: 5,
+      config: { city: "ingolstadt", maxPrice: 800, maxPages: 2 } as Prisma.InputJsonValue,
+    },
+  });
+  console.log("Seeded immowelt source.");
+
+  await prisma.source.upsert({
+    where: { slug: IMMOSCOUT_SOURCE_SLUG },
+    update: {},
+    create: {
+      slug: IMMOSCOUT_SOURCE_SLUG,
+      name: "Immobilienscout24",
+      integrationType: "scrape",
+      isActive: false,
+      scheduleCron: "*/30 * * * *",
+      rateLimitRpm: 5,
+      config: { city: "ingolstadt", maxPrice: 800, maxPages: 2 } as Prisma.InputJsonValue,
+    },
+  });
+  console.log("Seeded immoscout source.");
 }
 
 main()

@@ -4,6 +4,8 @@ import { createRedisConnection } from "../redis.js";
 import {
   MockConnector,
   KleinanzeigenConnector,
+  ImmoweltConnector,
+  ImmoscoutConnector,
   ConnectorRegistry,
   runQualityGate,
   computeFingerprint,
@@ -12,6 +14,8 @@ import {
 const registry = new ConnectorRegistry();
 registry.register(new MockConnector());
 registry.register(new KleinanzeigenConnector());
+registry.register(new ImmoweltConnector());
+registry.register(new ImmoscoutConnector());
 
 const connection = createRedisConnection();
 const matchQueue = new Queue("match", { connection });

@@ -19,3 +19,5 @@ export * from "./ingestion/quality-gate.js";
 export * from "./connectors/contract.js";
 export * from "./connectors/mock-connector.js";
 export { KleinanzeigenConnector, KLEINANZEIGEN_SOURCE_SLUG } from "./connectors/kleinanzeigen-connector.js";
+export { ImmoweltConnector, IMMOWELT_SOURCE_SLUG } from "./connectors/immowelt-connector.js";
+export { ImmoscoutConnector, IMMOSCOUT_SOURCE_SLUG } from "./connectors/immoscout-connector.js";
