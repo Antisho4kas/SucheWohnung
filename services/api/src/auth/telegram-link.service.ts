@@ -11,7 +11,12 @@ import { PrismaService } from "../prisma/prisma.service.js";
 export class TelegramLinkService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createLink(userId: string): Promise<{ url: string; token: string }> {
+  async createLink(userId: string): Promise<{ url: string; token: string; connected: boolean }> {
+    // Check if already connected
+    const existing = await this.prisma.telegramSubscription.findFirst({
+      where: { userId, enabled: true },
+    });
+
     const token = randomBytes(24).toString("hex");
     const tokenHash = createHash("sha256").update(token).digest("hex");
     await this.prisma.emailToken.create({
@@ -23,6 +28,6 @@ export class TelegramLinkService {
       },
     });
     const username = process.env.TELEGRAM_BOT_USERNAME ?? "SucheWohnungBot";
-    return { url: `https://t.me/${username}?start=${token}`, token };
+    return { url: `https://t.me/${username}?start=${token}`, token, connected: !!existing };
   }
 }

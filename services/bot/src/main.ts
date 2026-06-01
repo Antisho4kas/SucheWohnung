@@ -116,7 +116,7 @@ async function main(): Promise<void> {
     console.log("[bot] Webhook set to", webhookUrl);
   } else {
     console.log("[bot] Starting long polling...");
-    await bot.start();
+    await bot.start({ drop_pending_updates: false });
   }
 }
 

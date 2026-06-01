@@ -278,8 +278,8 @@ export const api = {
 
   getTelegramLink: async (): Promise<TelegramLinkResponse> => {
     try {
-      const data = await request<{ url?: string; token?: string }>("/auth/telegram/link", { method: "POST" });
-      return { link: data?.url ?? "", connected: false };
+      const data = await request<{ url?: string; token?: string; connected?: boolean }>("/auth/telegram/link", { method: "POST" });
+      return { link: data?.url ?? "", connected: data?.connected ?? false };
     } catch {
       return { link: "", connected: false };
     }

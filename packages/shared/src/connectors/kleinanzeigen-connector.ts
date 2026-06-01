@@ -3,19 +3,11 @@ import type { RawListing, NormalizedListing } from "../domain/listing.js";
 
 export const KLEINANZEIGEN_SOURCE_SLUG = "kleinanzeigen";
 
-const API_BASE = process.env.KLEINANZEIGEN_API_URL ?? "http://kleinanzeigen-api:8000";
+const API_BASE = process.env.KLEINANZEIGEN_API_URL ?? "http://localhost:8000";
 
 export class KleinanzeigenConnector implements SourceConnector {
   readonly slug = "kleinanzeigen";
   readonly type = "scrape" as const;
-
-  private buildUrl(city: string, minPrice: number, maxPrice: number, minArea: number, maxArea: number, minRooms: number): string {
-    let url = `https://www.kleinanzeigen.de/s-wohnung-mieten/${city}/wohnung-mieten/${city}`;
-    if (maxPrice > 0) url += `/preis:${minPrice}:${maxPrice}`;
-    if (minArea > 0) url += `/wohnflaeche:${minArea}:${maxArea}`;
-    if (minRooms > 0) url += `/zimmer:${minRooms}:`;
-    return url;
-  }
 
   async healthCheck(): Promise<HealthStatus> {
     try {
@@ -29,22 +21,18 @@ export class KleinanzeigenConnector implements SourceConnector {
 
   async *fetch(ctx: ConnectorContext, _opts: FetchOptions): AsyncIterable<RawListing> {
     const city = (ctx.config.city as string) ?? "berlin";
-    const minPrice = (ctx.config.minPrice as number) ?? 0;
     const maxPrice = (ctx.config.maxPrice as number) ?? 2000;
-    const minArea = (ctx.config.minArea as number) ?? 10;
-    const maxArea = (ctx.config.maxArea as number) ?? 500;
-    const minRooms = (ctx.config.minRooms as number) ?? 1;
     const pages = (ctx.config.maxPages as number) ?? 3;
 
-    const url = this.buildUrl(city, minPrice, maxPrice, minArea, maxArea, minRooms);
+    const params = new URLSearchParams({
+      query: `wohnung mieten`,
+      location: city,
+      max_price: String(maxPrice),
+      page_count: String(pages),
+    });
 
     try {
-      const body = JSON.stringify({ url, max_pages: pages });
-      const res = await fetch(`${API_BASE}/inserate-by-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-      });
+      const res = await fetch(`${API_BASE}/inserate?${params.toString()}`);
 
       if (!res.ok) {
         ctx.logger?.error?.(`Kleinanzeigen API returned ${res.status}`);
@@ -55,6 +43,8 @@ export class KleinanzeigenConnector implements SourceConnector {
       const results = data.results ?? [];
 
       for (const item of results) {
+        const priceNum = item.price ? Number(item.price) : 0;
+        if (priceNum < 50) continue;
         yield this.mapToRaw(item, city);
       }
     } catch (e) {
@@ -63,11 +53,12 @@ export class KleinanzeigenConnector implements SourceConnector {
   }
 
   private mapToRaw(item: KleinanzeigenResult, city: string): RawListing {
+    const priceNum = item.price ? Number(item.price) : 0;
     return {
       adid: item.adid,
       url: item.url,
       title: item.title ?? "",
-      price: item.price ? Number(item.price) : undefined,
+      price: priceNum >= 50 ? priceNum : undefined,
       description: item.description ?? "",
       city,
       published_at: item.published_at,
@@ -76,7 +67,8 @@ export class KleinanzeigenConnector implements SourceConnector {
 
   map(raw: RawListing): NormalizedListing {
     const title = (raw.title as string) ?? "";
-    const price = typeof raw.price === "number" ? raw.price : parseFloat(String(raw.price ?? "0")) || undefined;
+    const priceVal = raw.price as number | undefined;
+    const price = priceVal != null && priceVal >= 50 ? priceVal : undefined;
     const url = (raw.url as string) ?? "";
     const adid = (raw.adid as string) ?? "";
 
