@@ -150,6 +150,14 @@ services:
     environment:
       HEADLESS: "true"
 
+  immo-api:
+    build:
+      context: ./services/immo-api
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:
