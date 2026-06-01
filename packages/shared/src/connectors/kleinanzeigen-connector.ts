@@ -30,7 +30,7 @@ export class KleinanzeigenConnector implements SourceConnector {
         if (priceNum < 50) continue;
 
         // Fetch listing details for area/rooms/images
-        let detail: { area?: number; rooms?: number; images?: string[]; fullDescription?: string; postalCode?: string; details?: Record<string, string> } = {};
+        const detail: { area?: number; rooms?: number; images?: string[]; fullDescription?: string; postalCode?: string; details?: Record<string, string> } = {};
         try {
           const detailRes = await fetch(`${API_BASE}/inserat/${item.adid}?batch_id=suchewohnung`);
           if (detailRes.ok) {
