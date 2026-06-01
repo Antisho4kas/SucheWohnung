@@ -83,8 +83,9 @@ async function runMatchJob(job: { data: { listingId: string; event: "created" | 
           { matchId: match.id },
           { removeOnComplete: 5000, removeOnFail: 5000, attempts: 5, backoff: { type: "exponential", delay: 3000 } },
         );
+        // Stop-list: first match wins, skip remaining profiles for this listing
+        break;
       } catch (err) {
-        // ON CONFLICT (profile_id, listing_id) will throw; ignore duplicates
         if ((err as any)?.code === "P2002") {
           console.log(`[match] Duplicate match for profile=${profile.id} listing=${listing.id}`);
         } else {
