@@ -62,8 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(stored);
       apiFetch("/me")
         .then((data: unknown) => {
-          const d = data as { email?: string; id?: string; role?: string };
-          if (d.email) setUser({ id: d.id ?? "", email: d.email, role: d.role ?? "user" });
+          const d = data as { data?: { email?: string; id?: string; role?: string } };
+          const u = d?.data;
+          if (u?.email) setUser({ id: u.id ?? "", email: u.email, role: u.role ?? "user" });
           else throw new Error("no user");
         })
         .catch(() => {
@@ -89,8 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("auth_token", accessToken);
       setToken(accessToken);
 
-      const me = (await apiFetch("/me")) as { id?: string; email?: string; role?: string };
-      setUser({ id: me.id ?? "", email: me.email ?? "", role: me.role ?? "user" });
+      const me = (await apiFetch("/me")) as { data?: { id?: string; email?: string; role?: string } };
+      const u = me?.data;
+      if (u) setUser({ id: u.id ?? "", email: u.email ?? "", role: u.role ?? "user" });
       router.push("/dashboard");
     },
     [router],

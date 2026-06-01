@@ -138,27 +138,36 @@ function buildFilters(payload: CreateProfilePayload): FilterInput[] {
   return filters;
 }
 
+function toNum(v: unknown): number | null {
+  if (v == null) return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+
 function mapProfile(raw: Record<string, unknown>): SearchProfile {
   const criteria = (raw.criteria ?? {}) as Record<string, unknown>;
   const locationData = criteria.location as Record<string, unknown> | undefined;
+  const priceObj = criteria.price as Record<string, unknown> | undefined;
+  const areaObj = criteria.area as Record<string, unknown> | undefined;
+  const roomsObj = criteria.rooms as Record<string, unknown> | undefined;
   return {
     id: String(raw.id ?? ""),
     name: String(raw.name ?? ""),
     isActive: Boolean(raw.isActive) || String(raw.isActive) === "true",
     notify: Boolean(raw.notify) || String(raw.notify) === "true",
     criteria,
-    city: String(criteria.city ?? raw.city ?? ""),
+    city: String(criteria.city ?? ""),
     postal_code: String(criteria.postalCode ?? locationData?.postalCode ?? ""),
-    radius_km: locationData?.radiusKm != null ? Number(locationData.radiusKm) : null,
-    price_min: criteria.price_gte != null ? Number(criteria.price_gte) : null,
-    price_max: criteria.price_lte != null ? Number(criteria.price_lte) : null,
-    area_min: criteria.area_gte != null ? Number(criteria.area_gte) : null,
-    area_max: criteria.area_lte != null ? Number(criteria.area_lte) : null,
-    rooms_min: criteria.rooms_gte != null ? Number(criteria.rooms_gte) : null,
-    balcony: criteria.balcony === "true" || criteria.balcony === true,
-    elevator: criteria.elevator === "true" || criteria.elevator === true,
-    parking: criteria.parking === "true" || criteria.parking === true,
-    pets: criteria.pets_allowed === "true" || criteria.pets_allowed === true,
+    radius_km: locationData?.radiusKm != null ? toNum(locationData.radiusKm) : null,
+    price_min: priceObj?.gte != null ? toNum(priceObj.gte) : null,
+    price_max: priceObj?.lte != null ? toNum(priceObj.lte) : null,
+    area_min: areaObj?.gte != null ? toNum(areaObj.gte) : null,
+    area_max: areaObj?.lte != null ? toNum(areaObj.lte) : null,
+    rooms_min: roomsObj?.gte != null ? toNum(roomsObj.gte) : null,
+    balcony: criteria.balcony === true || criteria.balcony === "true",
+    elevator: criteria.elevator === true || criteria.elevator === "true",
+    parking: criteria.parking === true || criteria.parking === "true",
+    pets: criteria.pets_allowed === true || criteria.pets_allowed === "true",
     status: (raw.isActive ? "active" : "suspended") as "active" | "suspended",
     createdAt: String(raw.createdAt ?? ""),
     updatedAt: String(raw.updatedAt ?? ""),
@@ -226,7 +235,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  getMe: () => request<User>("/auth/me"),
+  getMe: () => request<User>("/me"),
 
   getProfiles: async (): Promise<SearchProfile[]> => {
     const data = await request<Record<string, unknown>[]>("/profiles");
@@ -263,14 +272,14 @@ export const api = {
     request<void>(`/profiles/${id}`, { method: "DELETE" }),
 
   getMatches: async (profileId?: string) => {
-    const qs = profileId ? `?profile_id=${profileId}` : "";
-    return request<Match[]>(`/matches${qs}`);
+    if (!profileId) return [];
+    return request<Match[]>(`/profiles/${profileId}/matches`);
   },
 
   getTelegramLink: async (): Promise<TelegramLinkResponse> => {
     try {
-      const data = await request<{ url?: string; token?: string; connected?: boolean }>("/telegram/link");
-      return { link: data?.url ?? "", connected: data?.connected ?? !!data?.token };
+      const data = await request<{ url?: string; token?: string }>("/auth/telegram/link", { method: "POST" });
+      return { link: data?.url ?? "", connected: false };
     } catch {
       return { link: "", connected: false };
     }
@@ -286,9 +295,9 @@ export const api = {
       body: JSON.stringify({ enabled }),
     }),
 
-  getQueueStatus: () => request<AdminQueueStatus>("/admin/queue"),
+  getQueueStatus: () => request<AdminQueueStatus>("/admin/queues"),
 
-  getAuditLogs: () => request<AdminAuditLog[]>("/admin/audit-logs"),
+  getAuditLogs: () => request<AdminAuditLog[]>("/admin/logs"),
 };
 
 export { ApiError };
