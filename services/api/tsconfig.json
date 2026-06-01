@@ -3,9 +3,10 @@
   "compilerOptions": {
     "outDir": "./dist",
     "paths": {
-      "@suchewohnung/shared": ["../../packages/shared/src/index.ts"],
-      "@suchewohnung/database": ["../../packages/database/src/index.ts"]
-    }
+      "@suchewohnung/shared": ["../../packages/shared/dist"],
+      "@suchewohnung/database": ["../../packages/database/dist"]
+    },
+    "baseUrl": "."
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules", "**/*.test.ts"]

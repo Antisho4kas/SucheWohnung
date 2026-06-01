@@ -90,6 +90,16 @@ async function runCollectJob(job: { data: { sourceSlug: string; cursor?: string 
           },
         });
         newItems++;
+        // Save listing images
+        if (normalized.images && normalized.images.length > 0) {
+          await prisma.listingImage.createMany({
+            data: normalized.images.slice(0, 10).map((img, idx) => ({
+              listingId: listing.id,
+              url: img.url,
+              position: idx,
+            })),
+          });
+        }
         await matchQueue.add("match", { listingId: listing.id, event: "created" }, { removeOnComplete: 5000, removeOnFail: 5000 });
       } else {
         await prisma.listing.update({
