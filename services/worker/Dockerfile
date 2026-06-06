@@ -1,6 +1,7 @@
 # Multi-stage build for Workers
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY . .
 RUN npm ci
 RUN npx --yes prisma generate --schema=packages/database/prisma/schema.prisma
@@ -12,6 +13,7 @@ RUN npm prune --omit=dev
 FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN useradd -m app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/services/worker/dist ./dist

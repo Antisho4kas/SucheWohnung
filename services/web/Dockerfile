@@ -1,6 +1,7 @@
 # Multi-stage build for Next.js frontend
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY . .
 RUN npm ci
 RUN npx --yes prisma generate --schema=packages/database/prisma/schema.prisma
