@@ -14,7 +14,9 @@ export const LoginSchema = z.object({
 });
 export class LoginDto extends createZodDto(LoginSchema) {}
 
-export const RefreshSchema = z.object({ refresh_token: z.string().min(1) });
+export const RefreshSchema = z
+  .object({ refresh_token: z.string().min(1).optional() })
+  .strict();
 export class RefreshDto extends createZodDto(RefreshSchema) {}
 
 export const VerifyEmailSchema = z.object({ token: z.string().min(1) });

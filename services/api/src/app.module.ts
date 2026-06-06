@@ -1,6 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD, APP_PIPE } from "@nestjs/core";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { ZodValidationPipe } from "nestjs-zod";
 import { PrismaModule } from "./prisma/prisma.module.js";
 import { QueueModule } from "./queue/queue.service.js";
@@ -20,6 +21,12 @@ import { RequestIdMiddleware } from "./common/request-id.middleware.js";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 120,
+      },
+    ]),
     PrismaModule,
     QueueModule,
     MetricsModule,
@@ -35,6 +42,7 @@ import { RequestIdMiddleware } from "./common/request-id.middleware.js";
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

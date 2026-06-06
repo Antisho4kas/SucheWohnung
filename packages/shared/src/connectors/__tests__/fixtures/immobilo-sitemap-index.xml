@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://www.immobilo.de/sitemap-exp-0.xml</loc>
+    <lastmod>2026-05-30T10:00:00+00:00</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.immobilo.de/sitemap-serp-l-mt-0.xml</loc>
+    <lastmod>2026-05-30T10:00:00+00:00</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://evil.example/sitemap-exp-1.xml</loc>
+    <lastmod>2026-05-30T10:00:00+00:00</lastmod>
+  </sitemap>
+</sitemapindex>

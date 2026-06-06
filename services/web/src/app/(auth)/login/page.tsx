@@ -14,6 +14,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const formatLoginError = (err: unknown) => {
+    const message = err instanceof Error ? err.message : t("login.failed");
+    return message === "Email verification required"
+      ? "Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse."
+      : message;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -21,8 +28,7 @@ export default function LoginPage() {
     try {
       await login(email, password);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t("login.failed");
-      setError(message);
+      setError(formatLoginError(err));
     } finally {
       setLoading(false);
     }
@@ -53,11 +59,17 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block">
+              <label
+                htmlFor="email"
+                className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block"
+              >
                 {t("login.email")}
               </label>
               <div className="relative">
-                <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Mail
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                />
                 <input
                   id="email"
                   type="email"
@@ -72,11 +84,17 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block">
+              <label
+                htmlFor="password"
+                className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block"
+              >
                 {t("login.password")}
               </label>
               <div className="relative">
-                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Lock
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                />
                 <input
                   id="password"
                   type="password"
@@ -92,7 +110,9 @@ export default function LoginPage() {
 
             {error && (
               <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
+                <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                  {error}
+                </p>
               </div>
             )}
 
@@ -108,12 +128,19 @@ export default function LoginPage() {
 
           <div className="mt-6 space-y-3 text-center">
             <p className="text-sm">
-              <Link href="/register" className="font-semibold text-primary hover:underline">
+              <Link
+                href="/register"
+                className="font-semibold text-primary hover:underline"
+              >
                 {t("login.noAccount")}
               </Link>
             </p>
             <p>
-              <Link href="/forgot-password" className="text-sm text-slate-400 dark:text-slate-500 hover:text-primary transition-colors">
+              <Link
+                href="/forgot-password"
+                prefetch={false}
+                className="text-sm text-slate-400 dark:text-slate-500 hover:text-primary transition-colors"
+              >
                 {t("login.forgotPassword")}
               </Link>
             </p>

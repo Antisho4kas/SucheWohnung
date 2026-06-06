@@ -8,7 +8,14 @@ import { z } from "zod";
  * with ZERO changes to matching code (§18.5 invariant).
  */
 
-export const FILTER_DATA_TYPES = ["number", "bool", "enum", "text", "range", "geo"] as const;
+export const FILTER_DATA_TYPES = [
+  "number",
+  "bool",
+  "enum",
+  "text",
+  "range",
+  "geo",
+] as const;
 export type FilterDataType = (typeof FILTER_DATA_TYPES)[number];
 
 export const FILTER_OPERATORS = ["gte", "lte", "eq", "in", "within"] as const;
@@ -42,8 +49,8 @@ export type ProfileFilter = z.infer<typeof ProfileFilterSchema>;
 
 /** Geo value for `within` operator. */
 export const GeoWithinValueSchema = z.object({
-  lat: z.number(),
-  lng: z.number(),
-  radius_km: z.number().positive(),
+  lat: z.number().finite().min(-90).max(90),
+  lng: z.number().finite().min(-180).max(180),
+  radius_km: z.number().finite().positive(),
 });
 export type GeoWithinValue = z.infer<typeof GeoWithinValueSchema>;

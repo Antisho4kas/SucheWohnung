@@ -46,7 +46,7 @@
 | | Меблированная (`furnished`) | bool | |
 | | Животные разрешены (`pets_allowed`) | bool | |
 | | Новостройка (`new_building`) | bool | |
-| | Без комиссии (`provision_free`) | bool | |
+| | Без комиссии (`provisionfrei`) | bool | |
 | **Тип сделки** | `deal_type` | enum: `rent`/`buy` | `rent` |
 | **Источники** | `source_filter` | array of source ids (опц.) | `[immoscout]` |
 

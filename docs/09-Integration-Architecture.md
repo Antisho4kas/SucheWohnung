@@ -15,9 +15,9 @@ flowchart LR
         DEDUP[Deduplicator]
     end
     subgraph Connectors[Connector Plugins]
-        C1[Immobilienscout24 API]
+        C1[Mock Connector]
         C2[Immowelt Scraper]
-        C3[Kleinanzeigen Scraper]
+        C3[Kleinanzeigen Adapter]
         CN[... new connector]
     end
     REG --> C1 & C2 & C3 & CN
@@ -55,7 +55,7 @@ export interface ConnectorContext {
 
 - **`RawListing`** — произвольная форма источника (`raw` сохраняется в `listings.raw`).
 - **`NormalizedListing`** — строго типизирован Zod‑схемой ядра (общие поля + `attributes`).
-- Регистрация: декоратор `@RegisterConnector()` + автоскан папки `connectors/` (или явный массив в DI‑модуле).
+- Регистрация: явный реестр коннекторов в runtime collector или будущий автоскан/DI-модуль. Текущий default registry документирован в [`VALIDATION.md`](./VALIDATION.md#canonical-implementation-status).
 
 ## 9.3 Жизненный цикл прогона (pipeline)
 
@@ -69,7 +69,7 @@ sequenceDiagram
     participant DB as PostgreSQL
     participant Q as Match Queue
 
-    S->>O: запустить source=immoscout
+    S->>O: запустить source=mock/immowelt/kleinanzeigen
     O->>Cn: healthCheck()
     Cn-->>O: OK
     O->>Cn: fetch() (paginated)
@@ -108,19 +108,17 @@ sequenceDiagram
 3. **Полный рендер DOM через Playwright** — крайний случай: ждём селекторы, скроллим (lazy‑load), кликаем пагинацию/«показать ещё».
 
 Покрытие требований:
-- **Автоматический обход сайта:** карта обхода в `config` (страницы списка, пагинация, правила перехода на карточку); поддержка sitemap.xml.
+- **Автоматический сбор с публичных страниц:** карта crawl path в `config` (страницы списка, пагинация, правила перехода на карточку); поддержка sitemap.xml.
 - **Чтение HTML / извлечение данных:** декларативные селекторы/маппинг в `config.selectors` (CSS/XPath/JSONata) → новый сайт зачастую = только конфиг + селекторы, без нового кода.
 - **JS‑страницы / динамический контент:** Playwright‑pool с `waitForSelector`, перехват сети, эмуляция скролла.
-- **Защита от блокировок:**
-  - Пул резидентных/датацентровых **прокси** с ротацией, гео‑привязка к DE.
-  - Ротация реалистичных `User-Agent` и заголовков, реальные viewport/locale (`de-DE`).
-  - Рандомизированные задержки, ограничение RPS, «вежливый» режим.
-  - Stealth‑патчи Playwright (маскировка webdriver‑признаков).
-  - Сессии/куки на источник, разогрев сессии.
-  - Решение CAPTCHA — через внешний сервис (опц., с осторожностью к легальности).
-  - Детект блокировки (HTTP 403/429, признаки challenge) → пауза, смена прокси/UA, circuit breaker.
+- **Безопасная эксплуатация скрейперов:**
+  - Низкая частота запросов, source-specific `rate_limit_rpm`, backoff и circuit breaker.
+  - Честный и стабильный `User-Agent`/заголовки там, где это уместно для источника.
+  - Предпочтение sitemap/listing/detail HTML вместо exhaustive query generation.
+  - Детект блокировки (HTTP 403/429, CAPTCHA/challenge) → пауза источника, алерт и повторная legal/robots проверка.
+  - Не обходить CAPTCHA/challenge, login/session gates, application/contact flows или robots-disallowed paths без явного разрешения.
 
-> **Юридическая оговорка:** скрейпинг ведётся с уважением robots.txt и ToS источника; при наличии официального API он приоритетен. Решения по конкретным источникам фиксируются в `docs/legal/` (см. Risk Analysis).
+> **Юридическая оговорка:** скрейпинг ведётся с уважением `robots.txt` и ToS источника; при наличии официального API он приоритетен. Решения по конкретным источникам фиксируются в [`LEGAL-ROBOTS-POLICY.md`](./LEGAL-ROBOTS-POLICY.md) и `docs/source-research/`.
 
 ## 9.6 Планировщик обновлений
 
@@ -132,16 +130,17 @@ sequenceDiagram
 ## 9.7 Добавление нового источника — чек‑лист
 
 ```
-1. Создать connectors/<slug>/<Slug>Connector.ts (extends ApiConnector|ScrapeConnector)
-2. Описать map()/selectors/field_map (часто только конфиг)
-3. Юнит‑тест map() на зафиксированных фикстурах (recorded HTML/JSON)
-4. INSERT в sources (+ source_credentials при необходимости)
-5. healthCheck() зелёный → включить is_active в админке
-6. Прогнать в staging, проверить качество данных и дедуп
-7. Включить в production, наблюдать дашборд source_runs
+1. Пройти source research + legal/robots gate.
+2. Создать/обновить SourceConnector с typed config validation.
+3. Описать map()/selectors/field_map.
+4. Добавить fixture-based тесты на HTML/JSON.
+5. Добавить source seed/config как inactive by default.
+6. Зарегистрировать connector в runtime registry только после onboarding gate.
+7. Прогнать dry-run без пользовательских уведомлений.
+8. Включить source только после review метрик, legal status и rollback plan.
 ```
 
-Никаких изменений в ядре, БД‑схеме, API или других коннекторах — это и есть масштабирование до десятков источников.
+Полный операционный чеклист: [`SOURCE-ONBOARDING.md`](./SOURCE-ONBOARDING.md). Целевое состояние SDK — добавление источника без изменений ядра/БД/API, но текущий runtime registry всё ещё требует явной регистрации коннектора.
 
 ## 9.8 Проверка качества данных (Этап 2)
 

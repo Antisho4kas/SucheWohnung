@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <title>WG-Gesucht search fixture</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "mainEntity": {
+          "@type": "ItemList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "item": {
+                "@type": "RealEstateListing",
+                "identifier": "1234567",
+                "url": "/wg-zimmer-in-Ingolstadt-Mitte.1234567.html",
+                "name": "Helles WG-Zimmer in 3er WG",
+                "description": "1 Zimmer in netter 3er WG, 18 m², Balkon, Warmmiete 640 €.",
+                "offers": {
+                  "@type": "Offer",
+                  "price": "640",
+                  "priceCurrency": "EUR"
+                },
+                "mainEntity": {
+                  "@type": "Apartment",
+                  "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "Theresienstr. 12",
+                    "postalCode": "85049",
+                    "addressLocality": "Ingolstadt"
+                  }
+                },
+                "image": [
+                  "https://img.wg-gesucht.test/1234567/1.jpg",
+                  "https://img.wg-gesucht.test/1234567/2.jpg"
+                ]
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "item": {
+                "@type": "RealEstateListing",
+                "identifier": {
+                  "@type": "PropertyValue",
+                  "value": "2345678"
+                },
+                "url": "https://www.wg-gesucht.test/wohnungen-in-Ingolstadt-West.2345678.html",
+                "headline": "2 Zimmer Wohnung nahe Audi",
+                "description": "Schöne Wohnung mit 2 Zimmern und Einbauküche. 85057 Ingolstadt.",
+                "price": "1.180 €",
+                "address": "85057 Ingolstadt, Ettinger Straße",
+                "image": "https://img.wg-gesucht.test/2345678/main.jpg"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "url": "/1-zimmer-wohnungen-in-Ingolstadt.3456789.html",
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Zwischenmiete: möblierte 1,5 Zimmer Wohnung",
+                "description": "Befristete Untermiete für 1,5 Zimmer, zentrale Lage, 710 EUR warm.",
+                "offers": {
+                  "priceSpecification": {
+                    "price": "710.00",
+                    "priceCurrency": "EUR"
+                  }
+                },
+                "address": {
+                  "postalCode": "85051",
+                  "addressLocality": "Ingolstadt"
+                },
+                "image": [
+                  { "url": "https://img.wg-gesucht.test/3456789/main.jpg" }
+                ]
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 4,
+              "item": {
+                "@type": "RealEstateListing",
+                "identifier": "missing-price",
+                "url": "/wg-zimmer-in-Ingolstadt.9999999.html",
+                "name": "Incomplete listing without rent",
+                "description": "This item is intentionally incomplete."
+              }
+            }
+          ]
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {malformed}
+    </script>
+  </head>
+  <body>
+    <main>WG-Gesucht public search page fixture</main>
+  </body>
+</html>

@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { evaluateProfile } from "../matching/predicate-engine.js";
-import { SEED_FILTER_DEFINITIONS, buildFilterIndex } from "../filters/registry.js";
+import {
+  SEED_FILTER_DEFINITIONS,
+  buildFilterIndex,
+} from "../filters/registry.js";
 import type { NormalizedListing } from "../domain/listing.js";
-import type { ProfileFilter } from "../filters/types.js";
+import type { FilterDefinition, ProfileFilter } from "../filters/types.js";
 
 const index = buildFilterIndex(SEED_FILTER_DEFINITIONS);
 
@@ -60,14 +63,70 @@ describe("predicate engine (§10.3)", () => {
 
   it("supports geo within radius (haversine)", () => {
     const near: ProfileFilter[] = [
-      { key: "location", operator: "within", value: { lat: 52.5, lng: 13.4, radius_km: 5 } },
+      {
+        key: "location",
+        operator: "within",
+        value: { lat: 52.5, lng: 13.4, radius_km: 5 },
+      },
     ];
     expect(evaluateProfile(baseListing, near, index).matched).toBe(true);
 
     const far: ProfileFilter[] = [
-      { key: "location", operator: "within", value: { lat: 48.137, lng: 11.575, radius_km: 5 } },
+      {
+        key: "location",
+        operator: "within",
+        value: { lat: 48.137, lng: 11.575, radius_km: 5 },
+      },
     ];
     expect(evaluateProfile(baseListing, far, index).matched).toBe(false);
+  });
+
+  it("fails geo radius filters when listing coordinates are missing", () => {
+    const filters: ProfileFilter[] = [
+      {
+        key: "location",
+        operator: "within",
+        value: { lat: 52.5, lng: 13.4, radius_km: 5 },
+      },
+    ];
+    const listingWithoutGeo: NormalizedListing = {
+      ...baseListing,
+      geo: undefined,
+    };
+
+    expect(evaluateProfile(listingWithoutGeo, filters, index).matched).toBe(
+      false,
+    );
+  });
+
+  it("supports custom DB-style filter definitions from the runtime index", () => {
+    const customDefinitions: FilterDefinition[] = [
+      {
+        key: "garden",
+        label: { en: "Garden" },
+        dataType: "bool",
+        operatorSet: ["eq"],
+        binding: { attribute: "garden" },
+      },
+    ];
+    const filters: ProfileFilter[] = [
+      { key: "garden", operator: "eq", value: true },
+    ];
+
+    expect(
+      evaluateProfile(baseListing, filters, buildFilterIndex(customDefinitions))
+        .matched,
+    ).toBe(false);
+    expect(
+      evaluateProfile(
+        {
+          ...baseListing,
+          attributes: { ...baseListing.attributes, garden: true },
+        },
+        filters,
+        buildFilterIndex(customDefinitions),
+      ).matched,
+    ).toBe(true);
   });
 
   it("supports `in` operator on city", () => {

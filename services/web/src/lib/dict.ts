@@ -8,7 +8,8 @@ const de = {
   "nav.register": "Registrieren",
   "nav.logout": "Abmelden",
   "hero.title": "Finden Sie Ihre Traumwohnung",
-  "hero.subtitle": "Wir suchen für Sie – Sie erhalten Benachrichtigungen in Telegram",
+  "hero.subtitle":
+    "Wir suchen für Sie – Sie erhalten Benachrichtigungen in Telegram",
   "hero.cta.register": "Jetzt registrieren",
   "hero.cta.login": "Ich habe schon ein Konto",
   "hero.howItWorks": "So funktioniert's",
@@ -59,8 +60,7 @@ const de = {
   "register.passwordTooShort":
     "Das Passwort muss mindestens 8 Zeichen lang sein.",
   "dashboard.title": "Mein Dashboard",
-  "dashboard.subtitle":
-    "Verwalten Sie Ihre Suchprofile und Benachrichtigungen",
+  "dashboard.subtitle": "Verwalten Sie Ihre Suchprofile und Benachrichtigungen",
   "dashboard.telegram.title": "Telegram",
   "dashboard.telegram.connected": "Verbunden",
   "dashboard.telegram.notConnected": "Nicht verbunden",
@@ -91,8 +91,7 @@ const de = {
   "dashboard.profiles.loading": "Wird geladen...",
   "dashboard.profiles.loadError": "Daten konnten nicht geladen werden.",
   "dashboard.profiles.statusError": "Status konnte nicht geändert werden.",
-  "dashboard.profiles.deleteError":
-    "Profil konnte nicht gelöscht werden.",
+  "dashboard.profiles.deleteError": "Profil konnte nicht gelöscht werden.",
   "profile.name": "Profilname",
   "profile.city": "Stadt",
   "profile.postalCode": "PLZ",
@@ -124,6 +123,11 @@ const de = {
   "profile.submitting": "Wird gespeichert...",
   "profile.cancel": "Abbrechen",
   "profile.createError": "Profil konnte nicht erstellt werden",
+  "profile.filtersRequired": "Bitte wählen Sie mindestens einen Filter aus.",
+  "profile.validationError": "Bitte prüfen Sie die Filterwerte.",
+  "profile.radiusIncomplete":
+    "Für den Umkreis sind Lat, Lng und Radius erforderlich.",
+  "profile.numericFilters": "Suchkriterien",
   "profile.price": "Preis",
   "profile.area": "Fläche",
   "profile.rooms": "Zimmer",
@@ -146,16 +150,12 @@ const de = {
   "admin.logs.time": "Zeit",
   "admin.logs.empty": "Keine Aktivitäten vorhanden",
   "admin.loading": "Wird geladen...",
-  "footer.text":
-    "© SucheWohnung – Wohnungssuche in Deutschland",
-  "footer.description":
-    "Ihr Begleiter bei der Wohnungssuche in Deutschland",
+  "footer.text": "© SucheWohnung – Wohnungssuche in Deutschland",
+  "footer.description": "Ihr Begleiter bei der Wohnungssuche in Deutschland",
   "footer.links": "Links",
   "footer.contact": "Kontakt",
-  "footer.contactText":
-    "Bei Fragen helfen wir Ihnen gerne weiter.",
-  "footer.copyright":
-    "© {year} SucheWohnung. Alle Rechte vorbehalten.",
+  "footer.contactText": "Bei Fragen helfen wir Ihnen gerne weiter.",
+  "footer.copyright": "© {year} SucheWohnung. Alle Rechte vorbehalten.",
   "common.loading": "Laden...",
   "common.error": "Fehler",
   "common.save": "Speichern",
@@ -184,8 +184,7 @@ const ru: DictShape = {
   "nav.register": "Регистрация",
   "nav.logout": "Выйти",
   "hero.title": "Найдите свою квартиру в Германии",
-  "hero.subtitle":
-    "Мы ищем за вас — вы получаете уведомления в Telegram",
+  "hero.subtitle": "Мы ищем за вас — вы получаете уведомления в Telegram",
   "hero.cta.register": "Зарегистрироваться",
   "hero.cta.login": "У меня уже есть аккаунт",
   "hero.howItWorks": "Как это работает",
@@ -201,8 +200,7 @@ const ru: DictShape = {
   "features.search.ru":
     "Поиск — Укажите город, цену, площадь. Мы ищем на всех сайтах.",
   "features.compare.title": "Сравнение",
-  "features.compare.desc":
-    "Смотрите все предложения и сравнивайте",
+  "features.compare.desc": "Смотрите все предложения и сравнивайте",
   "features.compare.long":
     "Все подходящие квартиры в одном месте. Сравнивайте цены, площади и районы быстро и удобно.",
   "features.compare.ru":
@@ -233,20 +231,21 @@ const ru: DictShape = {
   "register.hasAccount": "Уже есть аккаунт? Войти",
   "register.failed": "Ошибка регистрации",
   "register.passwordMismatch": "Пароли не совпадают.",
-  "register.passwordTooShort":
-    "Пароль должен быть не менее 8 символов.",
+  "register.passwordTooShort": "Пароль должен быть не менее 8 символов.",
   "dashboard.title": "Мой поиск",
-  "dashboard.subtitle":
-    "Управляйте поисковыми профилями и уведомлениями",
+  "dashboard.subtitle": "Управляйте поисковыми профилями и уведомлениями",
   "dashboard.telegram.title": "Telegram",
   "dashboard.telegram.connected": "Подключён",
   "dashboard.telegram.notConnected": "Не подключён",
   "dashboard.telegram.connect": "Подключить Telegram",
   "dashboard.telegram.copyLink": "Копировать ссылку",
   "dashboard.telegram.linkCopied": "Ссылка скопирована!",
-  "dashboard.telegram.connectedNote": "Telegram подключён. Уведомления будут приходить прямо в ваш чат.",
-  "dashboard.telegram.notConnectedNote": "Подключите Telegram для получения уведомлений.",
-  "dashboard.telegram.howToConnect": "Нажмите на ссылку или скопируйте её и откройте в Telegram. Запустите бота командой /start.",
+  "dashboard.telegram.connectedNote":
+    "Telegram подключён. Уведомления будут приходить прямо в ваш чат.",
+  "dashboard.telegram.notConnectedNote":
+    "Подключите Telegram для получения уведомлений.",
+  "dashboard.telegram.howToConnect":
+    "Нажмите на ссылку или скопируйте её и откройте в Telegram. Запустите бота командой /start.",
   "dashboard.telegram.checking": "Проверка подключения...",
   "dashboard.profiles": "Поисковые профили",
   "dashboard.profiles.empty": "Пока нет поисковых профилей",
@@ -259,17 +258,13 @@ const ru: DictShape = {
   "dashboard.profiles.matches": "Смотреть совпадения",
   "dashboard.profiles.toggleActive": "Включить",
   "dashboard.profiles.togglePause": "Пауза",
-  "dashboard.profiles.confirmDelete":
-    "Удалить поисковый профиль?",
+  "dashboard.profiles.confirmDelete": "Удалить поисковый профиль?",
   "dashboard.profiles.active": "Активен",
   "dashboard.profiles.paused": "На паузе",
   "dashboard.profiles.loading": "Загрузка...",
-  "dashboard.profiles.loadError":
-    "Не удалось загрузить данные.",
-  "dashboard.profiles.statusError":
-    "Не удалось изменить статус.",
-  "dashboard.profiles.deleteError":
-    "Не удалось удалить профиль.",
+  "dashboard.profiles.loadError": "Не удалось загрузить данные.",
+  "dashboard.profiles.statusError": "Не удалось изменить статус.",
+  "dashboard.profiles.deleteError": "Не удалось удалить профиль.",
   "profile.name": "Название профиля",
   "profile.city": "Город",
   "profile.postalCode": "Индекс",
@@ -301,6 +296,10 @@ const ru: DictShape = {
   "profile.submitting": "Сохранение...",
   "profile.cancel": "Отмена",
   "profile.createError": "Не удалось создать профиль",
+  "profile.filtersRequired": "Выберите хотя бы один фильтр.",
+  "profile.validationError": "Проверьте значения фильтров.",
+  "profile.radiusIncomplete": "Для радиуса нужны Lat, Lng и значение радиуса.",
+  "profile.numericFilters": "Критерии поиска",
   "profile.price": "Цена",
   "profile.area": "Площадь",
   "profile.rooms": "Комнат",
@@ -323,16 +322,12 @@ const ru: DictShape = {
   "admin.logs.time": "Время",
   "admin.logs.empty": "Нет записей",
   "admin.loading": "Загрузка...",
-  "footer.text":
-    "© SucheWohnung — поиск квартир в Германии",
-  "footer.description":
-    "Ваш помощник в поиске квартир в Германии",
+  "footer.text": "© SucheWohnung — поиск квартир в Германии",
+  "footer.description": "Ваш помощник в поиске квартир в Германии",
   "footer.links": "Ссылки",
   "footer.contact": "Контакты",
-  "footer.contactText":
-    "По вопросам мы с радостью поможем.",
-  "footer.copyright":
-    "© {year} SucheWohnung. Все права защищены.",
+  "footer.contactText": "По вопросам мы с радостью поможем.",
+  "footer.copyright": "© {year} SucheWohnung. Все права защищены.",
   "common.loading": "Загрузка...",
   "common.error": "Ошибка",
   "common.save": "Сохранить",

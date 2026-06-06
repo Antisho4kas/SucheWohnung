@@ -5,7 +5,11 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { buildCriteria, type ProfileFilter } from "@suchewohnung/shared";
+import {
+  buildCriteria,
+  validateProfileFilters,
+  type ProfileFilter,
+} from "@suchewohnung/shared";
 import type { CreateProfileDto, UpdateProfileDto } from "./dto.js";
 
 interface FilterInput {
@@ -14,69 +18,59 @@ interface FilterInput {
   value?: unknown;
 }
 
+interface ValidatedFilters {
+  readonly filters: readonly ProfileFilter[];
+  readonly filterDefIds: ReadonlyMap<string, string>;
+}
+
 @Injectable()
 export class ProfilesService {
   private readonly freeLimit = Number(process.env.FREE_PROFILE_LIMIT ?? 3);
-  private readonly premiumLimit = Number(process.env.PREMIUM_PROFILE_LIMIT ?? 20);
+  private readonly premiumLimit = Number(
+    process.env.PREMIUM_PROFILE_LIMIT ?? 20,
+  );
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /** Validate filters against the registry + semantic rules (FR-FILT-1/3/5). */
-  private async validateFilters(filters: FilterInput[]): Promise<void> {
+  private async validateFilters(
+    filters: FilterInput[],
+  ): Promise<ValidatedFilters> {
     const defs = await this.prisma.filterDefinition.findMany({
       where: { isActive: true },
     });
-    const byKey = new Map(defs.map((d) => [d.key, d]));
-
-    for (const f of filters) {
-      const def = byKey.get(f.key);
-      if (!def) throw new BadRequestException(`Unknown filter key: ${f.key}`);
-      if (!def.operatorSet.includes(f.operator)) {
-        throw new BadRequestException(
-          `Operator ${f.operator} not allowed for ${f.key}`,
-        );
-      }
+    const validation = validateProfileFilters(filters as ProfileFilter[], defs);
+    if (!validation.success) {
+      throw new BadRequestException({
+        message: "Invalid profile filters",
+        details: validation.errors,
+      });
     }
-
-    // FR-FILT-5: price_min ≤ price_max, area_min ≤ area_max.
-    this.assertRange(filters, "price");
-    this.assertRange(filters, "area");
-    this.assertRange(filters, "rooms");
-  }
-
-  private assertRange(filters: FilterInput[], key: string): void {
-    const gte = filters.find((f) => f.key === key && f.operator === "gte");
-    const lte = filters.find((f) => f.key === key && f.operator === "lte");
-    if (
-      gte &&
-      lte &&
-      typeof gte.value === "number" &&
-      typeof lte.value === "number" &&
-      gte.value > lte.value
-    ) {
-      throw new BadRequestException(`${key}: min must be ≤ max`);
-    }
+    return {
+      filters: validation.filters,
+      filterDefIds: new Map(defs.map((d) => [d.key, d.id])),
+    };
   }
 
   async create(userId: string, dto: CreateProfileDto) {
-    await this.validateFilters(dto.filters);
+    const validated = await this.validateFilters(dto.filters);
 
     // BR-3: enforce per-plan profile limit.
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
     const count = await this.prisma.searchProfile.count({ where: { userId } });
     const limit =
-      user.role === "premium" || user.role === "admin" || user.role === "super_admin"
+      user.role === "premium" ||
+      user.role === "admin" ||
+      user.role === "super_admin"
         ? this.premiumLimit
         : this.freeLimit;
     if (count >= limit) {
       throw new ForbiddenException(`Profile limit reached (${limit})`);
     }
 
-    const criteria = buildCriteria(dto.filters as ProfileFilter[]);
-    const defs = await this.prisma.filterDefinition.findMany();
-    const byKey = new Map(defs.map((d) => [d.key, d.id]));
+    const criteria = buildCriteria(validated.filters);
 
     return this.prisma.searchProfile.create({
       data: {
@@ -85,8 +79,8 @@ export class ProfilesService {
         notify: dto.notify ?? true,
         criteria: criteria as object,
         filters: {
-          create: dto.filters.map((f) => ({
-            filterDefId: byKey.get(f.key)!,
+          create: validated.filters.map((f) => ({
+            filterDefId: validated.filterDefIds.get(f.key)!,
             operator: f.operator,
             value: (f.value ?? null) as object,
           })),
@@ -114,13 +108,11 @@ export class ProfilesService {
     return profile;
   }
 
-  async update(
-    userId: string,
-    id: string,
-    dto: UpdateProfileDto,
-  ) {
+  async update(userId: string, id: string, dto: UpdateProfileDto) {
     await this.get(userId, id);
-    if (dto.filters) await this.validateFilters(dto.filters);
+    const validated = dto.filters
+      ? await this.validateFilters(dto.filters)
+      : undefined;
 
     const data: Record<string, unknown> = {};
     if (dto.name !== undefined) data.name = dto.name;
@@ -128,14 +120,12 @@ export class ProfilesService {
     if (dto.is_active !== undefined) data.isActive = dto.is_active;
 
     if (dto.filters) {
-      data.criteria = buildCriteria(dto.filters as ProfileFilter[]) as object;
-      const defs = await this.prisma.filterDefinition.findMany();
-      const byKey = new Map(defs.map((d) => [d.key, d.id]));
+      data.criteria = buildCriteria(validated!.filters) as object;
       await this.prisma.profileFilter.deleteMany({ where: { profileId: id } });
       await this.prisma.profileFilter.createMany({
-        data: dto.filters.map((f) => ({
+        data: validated!.filters.map((f) => ({
           profileId: id,
-          filterDefId: byKey.get(f.key)!,
+          filterDefId: validated!.filterDefIds.get(f.key)!,
           operator: f.operator,
           value: (f.value ?? null) as object,
         })),

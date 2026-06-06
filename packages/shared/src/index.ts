@@ -5,6 +5,7 @@ export * from "./domain/listing.js";
 // Filters (schema-driven)
 export * from "./filters/types.js";
 export * from "./filters/registry.js";
+export * from "./filters/validation.js";
 
 // Matching engine
 export * from "./matching/geo.js";
@@ -16,8 +17,4 @@ export * from "./ingestion/fingerprint.js";
 export * from "./ingestion/quality-gate.js";
 
 // Connectors
-export * from "./connectors/contract.js";
-export * from "./connectors/mock-connector.js";
-export { KleinanzeigenConnector, KLEINANZEIGEN_SOURCE_SLUG } from "./connectors/kleinanzeigen-connector.js";
-export { ImmoweltConnector, IMMOWELT_SOURCE_SLUG } from "./connectors/immowelt-connector.js";
-export { ImmoscoutConnector, IMMOSCOUT_SOURCE_SLUG } from "./connectors/immoscout-connector.js";
+export * from "./connectors/index.js";

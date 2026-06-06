@@ -6,25 +6,22 @@ import { AuthController } from "./auth.controller.js";
 import { JwtStrategy } from "./jwt.strategy.js";
 import { TelegramLinkService } from "./telegram-link.service.js";
 import { EmailService } from "../email/email.service.js";
+import { loadJwtKeyConfig } from "./jwt-config.js";
 
-function decodeKey(b64: string): string {
-  return b64 ? Buffer.from(b64, "base64").toString("utf8") : "";
-}
-
-const privateKey = decodeKey(process.env.JWT_PRIVATE_KEY_BASE64 ?? "");
-const publicKey = decodeKey(process.env.JWT_PUBLIC_KEY_BASE64 ?? "");
+const jwtConfig = loadJwtKeyConfig();
 
 const jwtModule =
-  privateKey && publicKey
+  jwtConfig.algorithm === "RS256"
     ? JwtModule.register({
-        privateKey,
-        publicKey,
+        privateKey: jwtConfig.privateKey,
+        publicKey: jwtConfig.publicKey,
         signOptions: { algorithm: "RS256" },
         verifyOptions: { algorithms: ["RS256"] },
       })
     : JwtModule.register({
-        secret: "dev-insecure-secret-change-me",
+        secret: jwtConfig.secret,
         signOptions: { algorithm: "HS256" },
+        verifyOptions: { algorithms: ["HS256"] },
       });
 
 @Module({

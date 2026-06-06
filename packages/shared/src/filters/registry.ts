@@ -1,5 +1,5 @@
 import type { FilterDefinition } from "./types.js";
-import { BOOLEAN_ATTRIBUTES } from "../domain/enums.js";
+import { BOOLEAN_ATTRIBUTES, BUNDESLAENDER } from "../domain/enums.js";
 
 /**
  * Seed filter registry (§10.2 table + §03.2.1).
@@ -29,6 +29,7 @@ export const SEED_FILTER_DEFINITIONS: FilterDefinition[] = [
     dataType: "enum",
     operatorSet: ["eq", "in"],
     binding: { column: "bundesland" },
+    config: { values: [...BUNDESLAENDER] },
   },
   {
     key: "postal_code",
@@ -50,7 +51,7 @@ export const SEED_FILTER_DEFINITIONS: FilterDefinition[] = [
     dataType: "number",
     operatorSet: ["gte", "lte"],
     binding: { column: "price" },
-    config: { unit: "EUR" },
+    config: { unit: "EUR", validation: { min: 0 } },
   },
   {
     key: "area",
@@ -58,7 +59,7 @@ export const SEED_FILTER_DEFINITIONS: FilterDefinition[] = [
     dataType: "number",
     operatorSet: ["gte", "lte"],
     binding: { column: "area" },
-    config: { unit: "m2" },
+    config: { unit: "m2", validation: { min: 0 } },
   },
   {
     key: "rooms",
@@ -66,6 +67,7 @@ export const SEED_FILTER_DEFINITIONS: FilterDefinition[] = [
     dataType: "number",
     operatorSet: ["gte", "lte"],
     binding: { column: "rooms" },
+    config: { validation: { min: 0 } },
   },
   ...booleanFilters,
 ];

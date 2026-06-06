@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useLocale } from "@/lib/i18n";
-import { UserPlus, Mail, Lock, ArrowLeft } from "lucide-react";
+import { UserPlus, Mail, Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -14,6 +14,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +33,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(email, password);
+      setPendingEmail(email);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t("register.failed");
       setError(message);
@@ -51,100 +53,154 @@ export default function RegisterPage() {
         </Link>
 
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 p-8">
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <UserPlus size={28} className="text-primary" />
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-1">
-              {t("register.title")}
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {t("register.welcome")}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block">
-                {t("register.email")}
-              </label>
-              <div className="relative">
-                <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ihre@email.de"
-                  required
-                  autoComplete="email"
-                  className="pl-10"
+          {pendingEmail ? (
+            <div className="text-center space-y-5">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
+                <CheckCircle2
+                  size={30}
+                  className="text-emerald-600 dark:text-emerald-400"
                 />
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block">
-                {t("register.password")}
-              </label>
-              <div className="relative">
-                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mindestens 8 Zeichen"
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                  className="pl-10"
-                />
+              <div>
+                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-2">
+                  Bitte bestätigen Sie Ihre E-Mail
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-6">
+                  Wir haben einen Bestätigungslink an{" "}
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">
+                    {pendingEmail}
+                  </span>{" "}
+                  gesendet. Nach der Bestätigung können Sie sich anmelden.
+                </p>
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="confirm-password" className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block">
-                {t("register.confirmPassword")}
-              </label>
-              <div className="relative">
-                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Passwort wiederholen"
-                  required
-                  autoComplete="new-password"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="btn btn-primary w-full py-3 text-base"
-              disabled={loading}
-            >
-              <UserPlus size={20} />
-              {loading ? t("register.submitting") : t("register.submit")}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm">
-              <Link href="/login" className="font-semibold text-primary hover:underline">
-                {t("register.hasAccount")}
+              <Link
+                href="/login"
+                className="btn btn-primary w-full py-3 text-base"
+              >
+                Zur Anmeldung
               </Link>
-            </p>
-          </div>
+            </div>
+          ) : (
+            <>
+              <div className="text-center mb-8">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <UserPlus size={28} className="text-primary" />
+                </div>
+                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-1">
+                  {t("register.title")}
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {t("register.welcome")}
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block"
+                  >
+                    {t("register.email")}
+                  </label>
+                  <div className="relative">
+                    <Mail
+                      size={18}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="ihre@email.de"
+                      required
+                      autoComplete="email"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block"
+                  >
+                    {t("register.password")}
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      size={18}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Mindestens 8 Zeichen"
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="confirm-password"
+                    className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block"
+                  >
+                    {t("register.confirmPassword")}
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      size={18}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
+                    <input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Passwort wiederholen"
+                      required
+                      autoComplete="new-password"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                    <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                      {error}
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="btn btn-primary w-full py-3 text-base"
+                  disabled={loading}
+                >
+                  <UserPlus size={20} />
+                  {loading ? t("register.submitting") : t("register.submit")}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm">
+                  <Link
+                    href="/login"
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    {t("register.hasAccount")}
+                  </Link>
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

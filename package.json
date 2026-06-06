@@ -12,29 +12,54 @@
     "services/*"
   ],
   "scripts": {
-    "build": "npm run build -w @suchewohnung/shared && npm run build -w @suchewohnung/database && npm run build -w @suchewohnung/api && npm run build -w @suchewohnung/worker && npm run build -w @suchewohnung/bot && npm run build -w @suchewohnung/web",
+    "build": "npm run build -w @suchewohnung/shared && npm run build -w @suchewohnung/database && npm run build -w @suchewohnung/telegram && npm run build -w @suchewohnung/api && npm run build -w @suchewohnung/worker && npm run build -w @suchewohnung/bot && npm run build -w @suchewohnung/web",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run --config vitest.ci.config.ts",
+    "test:worker": "vitest run --config vitest.worker.config.ts",
+    "test:api": "vitest run --config vitest.api.config.ts",
+    "test:api:e2e": "vitest run --config vitest.api-e2e.config.ts",
+    "test:web": "vitest run --config vitest.web.config.ts",
+    "test:connectors": "vitest run --config vitest.connectors.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:coverage": "vitest run --config vitest.ci.config.ts --coverage",
+    "test:release-contracts": "vitest run --config vitest.release-contracts.config.ts",
+    "ci:test": "npm run test:coverage",
+    "ci:supply-chain": "npm audit --audit-level=high && npm run license:check && npm run sbom:generate",
+    "license:check": "node -e \"const fs=require('fs');const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));const denied=/\\b(?:AGPL|GPL|LGPL|SSPL)\\b/i;const deniedAllow=[/^node_modules\\/@img\\/sharp(?:-|$)/];const missingAllow=[/^node_modules\\/@suchewohnung\\//,'node_modules/busboy','node_modules/passport-strategy','node_modules/pause','node_modules/streamsearch'];const allowed=(p,a)=>a.some((x)=>typeof x==='string'?x===p:x.test(p));const hits=[];for(const [p,x] of Object.entries(lock.packages||{})){if(!p.startsWith('node_modules/')||x.dev)continue;const license=String(x.license||'').trim();if(!license&&!allowed(p,missingAllow))hits.push(p+' <missing license>');if(license&&denied.test(license)&&!allowed(p,deniedAllow))hits.push(p+' '+license)}if(hits.length){console.error('License policy violations:\\n'+hits.join('\\n'));process.exit(1)}console.log('License check passed')\"",
+    "sbom:generate": "npm sbom --sbom-format=cyclonedx --omit=dev > sbom.cdx.json",
     "test:watch": "vitest",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
     "db:generate": "npm run -w @suchewohnung/database generate",
     "db:migrate": "npm run -w @suchewohnung/database migrate",
     "db:seed": "npm run -w @suchewohnung/database seed",
+    "smoke:deps": "docker compose --profile smoke up --wait -d postgres-smoke redis-smoke",
+    "smoke:release": "node scripts/release-smoke.mjs",
+    "smoke:release:compose": "node scripts/release-smoke.mjs --compose --confirm-smoke-db-reset=suchewohnung_smoke",
     "dev:api": "npm run -w @suchewohnung/api dev",
     "dev:worker": "npm run -w @suchewohnung/worker dev",
     "dev:bot": "npm run -w @suchewohnung/bot dev"
   },
+  "overrides": {
+    "lodash": "4.18.1",
+    "multer": "2.1.1",
+    "vite": "6.4.2"
+  },
   "devDependencies": {
+    "@nestjs/testing": "^10.4.22",
     "@types/node": "^22.10.0",
     "@types/nodemailer": "^8.0.0",
+    "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
+    "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.4.2",
     "shx": "^0.4.0",
+    "supertest": "^7.2.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.8"
   }
 }

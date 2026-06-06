@@ -1,28 +1,44 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
+import { PrismaService } from "../prisma/prisma.service.js";
+import { loadJwtKeyConfig } from "./jwt-config.js";
 
 export interface JwtPayload {
   sub: string;
   email: string;
   role: string;
+  status?: string;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
-    const pubB64 = process.env.JWT_PUBLIC_KEY_BASE64 ?? "";
-    const publicKey = pubB64 ? Buffer.from(pubB64, "base64").toString("utf8") : "";
+  constructor(private readonly prisma: PrismaService) {
+    const jwtConfig = loadJwtKeyConfig();
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      ...(publicKey
-        ? { secretOrKey: publicKey, algorithms: ["RS256"] }
-        : { secretOrKey: "dev-insecure-secret-change-me", algorithms: ["HS256"] }),
+      ...(jwtConfig.algorithm === "RS256"
+        ? { secretOrKey: jwtConfig.publicKey, algorithms: ["RS256"] }
+        : { secretOrKey: jwtConfig.secret, algorithms: ["HS256"] }),
     });
   }
 
-  validate(payload: JwtPayload): JwtPayload {
-    return payload;
+  async validate(payload: JwtPayload): Promise<JwtPayload> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, email: true, role: true, status: true, deletedAt: true },
+    });
+
+    if (!user || user.deletedAt || user.status !== "active") {
+      throw new UnauthorizedException("Account is not active");
+    }
+
+    return {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+    };
   }
 }

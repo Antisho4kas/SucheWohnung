@@ -12,12 +12,48 @@ import type {
  * the full pipeline (ingest → validate → dedup → match → notify) can run with
  * zero real sources. Used in development and tests.
  */
-const CITIES: Array<{ city: string; bundesland: (typeof BUNDESLAENDER)[number]; plz: string; lat: number; lng: number }> = [
-  { city: "Berlin", bundesland: "Berlin", plz: "10115", lat: 52.52, lng: 13.405 },
-  { city: "München", bundesland: "Bayern", plz: "80331", lat: 48.137, lng: 11.575 },
-  { city: "Hamburg", bundesland: "Hamburg", plz: "20095", lat: 53.55, lng: 9.993 },
-  { city: "Frankfurt", bundesland: "Hessen", plz: "60311", lat: 50.11, lng: 8.682 },
-  { city: "Köln", bundesland: "Nordrhein-Westfalen", plz: "50667", lat: 50.937, lng: 6.96 },
+const CITIES: Array<{
+  city: string;
+  bundesland: (typeof BUNDESLAENDER)[number];
+  plz: string;
+  lat: number;
+  lng: number;
+}> = [
+  {
+    city: "Berlin",
+    bundesland: "Berlin",
+    plz: "10115",
+    lat: 52.52,
+    lng: 13.405,
+  },
+  {
+    city: "München",
+    bundesland: "Bayern",
+    plz: "80331",
+    lat: 48.137,
+    lng: 11.575,
+  },
+  {
+    city: "Hamburg",
+    bundesland: "Hamburg",
+    plz: "20095",
+    lat: 53.55,
+    lng: 9.993,
+  },
+  {
+    city: "Frankfurt",
+    bundesland: "Hessen",
+    plz: "60311",
+    lat: 50.11,
+    lng: 8.682,
+  },
+  {
+    city: "Köln",
+    bundesland: "Nordrhein-Westfalen",
+    plz: "50667",
+    lat: 50.937,
+    lng: 6.96,
+  },
 ];
 
 export const MOCK_SOURCE_SLUG = "mock";
@@ -31,7 +67,10 @@ export class MockConnector implements SourceConnector {
     return { healthy: true, detail: "mock always healthy" };
   }
 
-  async *fetch(ctx: ConnectorContext, opts: FetchOptions): AsyncIterable<RawListing> {
+  async *fetch(
+    ctx: ConnectorContext,
+    opts: FetchOptions,
+  ): AsyncIterable<RawListing> {
     const count = Math.min(opts.maxItems ?? 10, 50);
     const seed = Date.now();
     for (let i = 0; i < count; i++) {

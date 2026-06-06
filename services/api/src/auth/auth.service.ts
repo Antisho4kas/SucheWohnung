@@ -9,6 +9,12 @@ import * as argon2 from "argon2";
 import { createHash, randomBytes } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service.js";
 
+type RefreshTokenClient = {
+  refreshToken: {
+    create(args: { data: { userId: string; tokenHash: string; expiresAt: Date } }): Promise<unknown>;
+  };
+};
+
 export interface TokenPair {
   access_token: string;
   refresh_token: string;
@@ -137,7 +143,9 @@ export class AuthService {
       where: { email, deletedAt: null },
     });
     if (!user) throw new UnauthorizedException("Invalid credentials");
+    if (user.status === "pending") throw new UnauthorizedException("Email verification required");
     if (user.status === "suspended") throw new UnauthorizedException("Account suspended");
+    if (user.status === "deleted") throw new UnauthorizedException("Invalid credentials");
     const ok = await argon2.verify(user.passwordHash, password);
     if (!ok) throw new UnauthorizedException("Invalid credentials");
     return user;
@@ -150,10 +158,10 @@ export class AuthService {
     );
   }
 
-  private async issueRefresh(userId: string): Promise<string> {
+  private async issueRefresh(userId: string, client: RefreshTokenClient = this.prisma): Promise<string> {
     const token = randomBytes(48).toString("hex");
     const days = this.jwtRefreshTtlDays;
-    await this.prisma.refreshToken.create({
+    await client.refreshToken.create({
       data: {
         userId,
         tokenHash: this.hashToken(token),
@@ -178,21 +186,35 @@ export class AuthService {
   /** Refresh-token rotation (§08.3, §13.1). */
   async refresh(refreshToken: string): Promise<TokenPair> {
     const hash = this.hashToken(refreshToken);
-    const rec = await this.prisma.refreshToken.findFirst({
-      where: { tokenHash: hash, revokedAt: null },
-      include: { user: true },
+    const issued = await this.prisma.$transaction(async (tx) => {
+      const rec = await tx.refreshToken.findFirst({
+        where: { tokenHash: hash, revokedAt: null },
+        include: { user: true },
+      });
+      if (!rec || rec.expiresAt < new Date()) {
+        throw new UnauthorizedException("Invalid refresh token");
+      }
+      if (rec.user.deletedAt || rec.user.status !== "active") {
+        throw new UnauthorizedException("Account is not active");
+      }
+
+      const revoked = await tx.refreshToken.updateMany({
+        where: { id: rec.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      if (revoked.count !== 1) {
+        throw new UnauthorizedException("Invalid refresh token");
+      }
+
+      return {
+        user: rec.user,
+        refreshToken: await this.issueRefresh(rec.userId, tx),
+      };
     });
-    if (!rec || rec.expiresAt < new Date()) {
-      throw new UnauthorizedException("Invalid refresh token");
-    }
-    // Rotate: revoke the old token, issue a new pair.
-    await this.prisma.refreshToken.update({
-      where: { id: rec.id },
-      data: { revokedAt: new Date() },
-    });
+
     return {
-      access_token: this.signAccess(rec.user),
-      refresh_token: await this.issueRefresh(rec.userId),
+      access_token: this.signAccess(issued.user),
+      refresh_token: issued.refreshToken,
     };
   }
 

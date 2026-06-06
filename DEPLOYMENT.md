@@ -27,7 +27,8 @@ Docker images are built automatically via GitHub Actions on every push to `main`
 cp .env.example .env
 # Edit .env — add TELEGRAM_BOT_TOKEN, DB_PASSWORD, etc.
 
-# 2. Pull and run pre-built images
+# 2. Validate and run pre-built images
+docker compose -f docker-compose.prod.yml config --quiet
 docker compose -f docker-compose.prod.yml up -d
 
 # 3. Run migrations (first time)
@@ -46,10 +47,18 @@ docker compose -f docker-compose.yml up -d
 
 | Service | Port | Description |
 |---------|------|-------------|
-| nginx | 80 | Frontend proxy |
-| api | 3000 | REST API |
-| web | 8080 | Next.js frontend |
-| postgres | 5432 | PostgreSQL + PostGIS |
-| redis | 6379 | Redis 7 |
+| nginx web | `80` | Frontend proxy. |
+| nginx API proxy | `3000` | API proxy exposed by nginx. |
+| api direct | `127.0.0.1:3001` | REST API direct bind; avoids nginx port `3000`. |
+| web direct | `127.0.0.1:8080` | Next.js frontend direct bind for local smoke/debug. |
+| postgres | internal only | PostgreSQL + PostGIS. |
+| redis | internal only | Redis 7. |
 | worker-* | — | Background workers |
 | bot | — | Telegram bot |
+
+### Secret Hygiene
+
+- Root `.dockerignore` excludes `.env`, `.env.*`, `secrets/`, dependency folders, build outputs, logs, local database dumps, archives, and tool outputs from shared Node build contexts.
+- `services/immo-api/.dockerignore` protects the service-local Python build context, because root `.dockerignore` does not apply when the Compose build context is `./services/immo-api`.
+- `docker-compose.prod.yml` requires `DB_PASSWORD`; it does not fall back to the local development password.
+- Use `docker compose config --quiet` for validation when real `.env` files are present; do not paste full rendered config output containing runtime secrets.

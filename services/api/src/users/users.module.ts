@@ -3,16 +3,19 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   Module,
   Patch,
   Put,
   UseGuards,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth } from "@nestjs/swagger";
+import { ZodValidationPipe } from "nestjs-zod";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { JwtAuthGuard } from "../auth/guards.js";
 import { CurrentUser } from "../auth/current-user.decorator.js";
 import type { JwtPayload } from "../auth/jwt.strategy.js";
+import { SetConsentDto, UpdateMeDto } from "./dto.js";
 
 /**
  * Self-service account (§08.5 Users) + GDPR rights (§13.4):
@@ -23,7 +26,7 @@ import type { JwtPayload } from "../auth/jwt.strategy.js";
 @UseGuards(JwtAuthGuard)
 @Controller("api/v1/me")
 export class MeController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   @Get()
   async me(@CurrentUser() user: JwtPayload) {
@@ -43,7 +46,10 @@ export class MeController {
   }
 
   @Patch()
-  async update(@CurrentUser() user: JwtPayload, @Body() body: { locale?: string }) {
+  async update(
+    @CurrentUser() user: JwtPayload,
+    @Body(new ZodValidationPipe(UpdateMeDto)) body: UpdateMeDto,
+  ) {
     const u = await this.prisma.user.update({
       where: { id: user.sub },
       data: { locale: body.locale },
@@ -103,7 +109,7 @@ export class MeController {
   @Put("consents")
   async setConsent(
     @CurrentUser() user: JwtPayload,
-    @Body() body: { consent_type: string; granted: boolean },
+    @Body(new ZodValidationPipe(SetConsentDto)) body: SetConsentDto,
   ) {
     const c = await this.prisma.userConsent.create({
       data: { userId: user.sub, consentType: body.consent_type, granted: body.granted },

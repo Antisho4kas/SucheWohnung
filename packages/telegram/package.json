@@ -1,0 +1,21 @@
+{
+  "name": "@suchewohnung/telegram",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@suchewohnung/database": "1.0.0",
+    "grammy": "^1.35.0"
+  }
+}

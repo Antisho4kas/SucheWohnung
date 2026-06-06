@@ -14,17 +14,26 @@ env:
 jobs:
   lint-test-build:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://app:app@localhost:5432/suchewohnung_smoke?schema=public
+      REDIS_URL: redis://localhost:6379
+      SMOKE_DATABASE_URL: postgresql://app:app@localhost:5432/suchewohnung_smoke?schema=public
+      SMOKE_REDIS_URL: redis://localhost:6379
+      RUN_DB_REDIS_SMOKE: "1"
+      CONFIRM_SMOKE_DB_RESET: suchewohnung_smoke
+      CI_SMOKE_DB_IS_EPHEMERAL: "1"
+      CI_SMOKE_REDIS_IS_EPHEMERAL: "1"
     services:
       postgres:
         image: postgis/postgis:16-3.4
         env:
-          POSTGRES_DB: suchewohnung
+          POSTGRES_DB: suchewohnung_smoke
           POSTGRES_USER: app
           POSTGRES_PASSWORD: app
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U app -d suchewohnung_smoke"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -50,16 +59,51 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Supply chain audit, licenses, and SBOM
+        run: npm run ci:supply-chain
+
+      - name: Verify SBOM artifact
+        run: test -s sbom.cdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sbom-cyclonedx
+          path: sbom.cdx.json
+          if-no-files-found: warn
+
       - name: Generate Prisma Client
         run: npm run db:generate
-        env:
-          DATABASE_URL: postgresql://app:app@localhost:5432/suchewohnung?schema=public
 
-      - name: Build shared
-        run: npm run build -w @suchewohnung/shared
+      - name: Reset clean PostGIS database
+        run: node scripts/reset-smoke-db.mjs
 
-      - name: Build database
-        run: npm run build -w @suchewohnung/database
+      - name: Deploy migrations on clean PostGIS
+        run: npm run db:migrate
+
+      - name: Seed clean PostGIS database
+        run: npm run db:seed
+
+      - name: Seed idempotency check
+        run: npm run db:seed
+
+      - name: Test stable harness
+        run: npm run ci:test
+
+      - name: DB/Redis worker integration smoke
+        run: npm run test:integration
+
+      - name: Verify coverage artifact
+        run: test -s coverage/coverage-summary.json
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: warn
 
       - name: Lint
         run: npm run lint
@@ -67,19 +111,60 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Test
-        run: npm run test
-        env:
-          DATABASE_URL: postgresql://app:app@localhost:5432/suchewohnung?schema=public
-          REDIS_URL: redis://localhost:6379
-
       - name: Build all
         run: npm run build
 
-  build-docker:
+  docker-build-pr:
     runs-on: ubuntu-latest
     needs: lint-test-build
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+
+    strategy:
+      matrix:
+        service:
+          - name: api
+            dockerfile: services/api/Dockerfile
+          - name: web
+            dockerfile: services/web/Dockerfile
+          - name: worker
+            dockerfile: services/worker/Dockerfile
+          - name: bot
+            dockerfile: services/bot/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Compose config
+        run: docker compose config --quiet
+
+      - name: Validate production Docker Compose config
+        run: |
+          printf '%s\n' \
+            'DB_PASSWORD=ci-placeholder' \
+            'JWT_SECRET=ci-placeholder' \
+            'TELEGRAM_BOT_TOKEN=ci-placeholder' \
+            'SMTP_URL=smtp://ci-placeholder.invalid' \
+            > "$RUNNER_TEMP/prod-compose.env"
+          cp "$RUNNER_TEMP/prod-compose.env" .env
+          docker compose --env-file "$RUNNER_TEMP/prod-compose.env" -f docker-compose.prod.yml config --quiet
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service.dockerfile }}
+          push: false
+          cache-from: type=gha
+
+  docker-publish-main:
+    runs-on: ubuntu-latest
+    needs: lint-test-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -101,6 +186,20 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Compose config
+        run: docker compose config --quiet
+
+      - name: Validate production Docker Compose config
+        run: |
+          printf '%s\n' \
+            'DB_PASSWORD=ci-placeholder' \
+            'JWT_SECRET=ci-placeholder' \
+            'TELEGRAM_BOT_TOKEN=ci-placeholder' \
+            'SMTP_URL=smtp://ci-placeholder.invalid' \
+            > "$RUNNER_TEMP/prod-compose.env"
+          cp "$RUNNER_TEMP/prod-compose.env" .env
+          docker compose --env-file "$RUNNER_TEMP/prod-compose.env" -f docker-compose.prod.yml config --quiet
 
       - name: Log in to Container Registry
         uses: docker/login-action@v3

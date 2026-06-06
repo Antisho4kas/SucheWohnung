@@ -1,14 +1,29 @@
 # SucheWohnung — Docker Compose (dev/staging) (§14.2)
 
+x-app-env: &app-env
+  NODE_ENV: development
+  LOG_LEVEL: info
+  DATABASE_URL: postgresql://app:app@postgres:5432/suchewohnung?schema=public
+  REDIS_URL: redis://redis:6379
+  API_BASE_URL: http://api:3000
+  WEB_BASE_URL: http://localhost
+  TELEGRAM_BOT_TOKEN: ""
+  TELEGRAM_BOT_USERNAME: SucheWohnungBot
+  TELEGRAM_USE_WEBHOOK: "false"
+  TELEGRAM_WEBHOOK_URL: ""
+  TELEGRAM_WEBHOOK_SECRET: ""
+  SMTP_URL: ""
+  EMAIL_FROM: no-reply@suchewohnung.de
+
 services:
   postgres:
     image: postgis/postgis:16-3.4
     environment:
       POSTGRES_DB: suchewohnung
       POSTGRES_USER: app
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-app}
+      POSTGRES_PASSWORD: app
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,11 +32,28 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-smoke:
+    profiles: ["smoke"]
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: suchewohnung_smoke
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      - "127.0.0.1:55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d suchewohnung_smoke"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -30,16 +62,27 @@ services:
       timeout: 5s
       retries: 5
 
+  redis-smoke:
+    profiles: ["smoke"]
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:56379:6379"
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: .
       dockerfile: services/api/Dockerfile
-    env_file: .env
     environment:
-      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
-      REDIS_URL: redis://redis:6379
+      <<: *app-env
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3001:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,10 +95,8 @@ services:
       context: .
       dockerfile: services/worker/Dockerfile
     command: ["node", "dist/workers/collect.js"]
-    env_file: .env
     environment:
-      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
-      REDIS_URL: redis://redis:6379
+      <<: *app-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,10 +111,8 @@ services:
       context: .
       dockerfile: services/worker/Dockerfile
     command: ["node", "dist/workers/match.js"]
-    env_file: .env
     environment:
-      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
-      REDIS_URL: redis://redis:6379
+      <<: *app-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,10 +127,8 @@ services:
       context: .
       dockerfile: services/worker/Dockerfile
     command: ["node", "dist/workers/notify.js"]
-    env_file: .env
     environment:
-      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
-      REDIS_URL: redis://redis:6379
+      <<: *app-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -106,10 +143,8 @@ services:
       context: .
       dockerfile: services/worker/Dockerfile
     command: ["node", "dist/workers/scheduler.js"]
-    env_file: .env
     environment:
-      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
-      REDIS_URL: redis://redis:6379
+      <<: *app-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -118,13 +153,12 @@ services:
     restart: unless-stopped
 
   bot:
+    profiles: ["telegram"]
     build:
       context: .
       dockerfile: services/bot/Dockerfile
-    env_file: .env
     environment:
-      DATABASE_URL: postgresql://app:${DB_PASSWORD:-app}@postgres:5432/suchewohnung?schema=public
-      REDIS_URL: redis://redis:6379
+      <<: *app-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -136,7 +170,8 @@ services:
     build:
       context: .
       dockerfile: services/web/Dockerfile
-    env_file: .env
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
     depends_on:
       api:
         condition: service_started
@@ -145,7 +180,7 @@ services:
   kleinanzeigen-api:
     image: ghcr.io/danielwte/ebay-kleinanzeigen-api:latest
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     restart: unless-stopped
     environment:
       HEADLESS: "true"
@@ -155,14 +190,14 @@ services:
       context: ./services/immo-api
       dockerfile: Dockerfile
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     restart: unless-stopped
 
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
-      - "3000:3000"
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:3000:3000"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:

@@ -6,6 +6,7 @@ RUN npm ci
 RUN npx --yes prisma generate --schema=packages/database/prisma/schema.prisma
 RUN npm run build -w @suchewohnung/shared
 RUN npm run build -w @suchewohnung/database
+RUN npm run build -w @suchewohnung/telegram
 RUN npm run build -w @suchewohnung/bot
 RUN npm prune --omit=dev
 

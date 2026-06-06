@@ -43,7 +43,8 @@
 | Queue backlog | `queue_depth{notify} > 5000` 10 мин | High |
 | API errors | 5xx‑rate > 2% 5 мин | Critical |
 | DB | CPU > 85% / свободное место < 15% | Critical |
-| Notify latency | p95 от находки до доставки > 5 мин | Medium |
+| Notify latency SLO | p95 от находки до доставки > 60 c | Medium |
+| Notify latency hard breach | Любая или устойчивая задержка от находки до доставки > 5 мин | High |
 | Proxy ban spike | `http_status{code=403/429}` всплеск | High |
 
 ## 14.5 Дашборды Grafana

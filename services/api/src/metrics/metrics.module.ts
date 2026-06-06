@@ -1,6 +1,7 @@
-import { Controller, Get, Global, Module, Res } from "@nestjs/common";
+import { Controller, Get, Global, Module, NotFoundException, Res } from "@nestjs/common";
 import type { Response } from "express";
 import { Public } from "../auth/guards.js";
+import { isMetricsPubliclyEnabled } from "../config/configuration.js";
 import { Registry, collectDefaultMetrics, Counter, Histogram } from "prom-client";
 
 /** Prometheus metrics (§04.6 NFR-MON-1, §15.3). */
@@ -25,9 +26,12 @@ export const businessCounters = {
 
 @Public()
 @Controller()
-class MetricsController {
+export class MetricsController {
   @Get("metrics")
   async metrics(@Res() res: Response): Promise<void> {
+    if (!isMetricsPubliclyEnabled()) {
+      throw new NotFoundException();
+    }
     res.setHeader("Content-Type", registry.contentType);
     res.send(await registry.metrics());
   }

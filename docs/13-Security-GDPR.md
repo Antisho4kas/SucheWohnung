@@ -4,7 +4,7 @@
 
 - **JWT**: короткоживущий access (15 мин) + refresh (30 дн, rotating, хранится в httpOnly+Secure+SameSite=Strict cookie). Подпись RS256, ключи в KMS/секрет‑менеджере, ротация ключей.
 - **Хеш паролей**: Argon2id (memory‑hard), per‑user salt.
-- **RBAC**: роли `user`, `support`, `admin` (claim в JWT + проверка на сервере). Админ‑эндпоинты — отдельный guard.
+- **RBAC**: канонические роли `user`, `premium`, `admin`, `super_admin` (claim в JWT + проверка на сервере; см. [`VALIDATION.md`](./VALIDATION.md#разрешение-противоречий)). Операционный `support` — alias/permission-set внутри admin без write-доступа к секретам, не отдельное значение enum. Админ‑эндпоинты — отдельный guard.
 - **2FA (TOTP)** для админов — обязательно.
 - **Подтверждение email**, защита от перебора (см. ниже).
 

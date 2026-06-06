@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Inject,
   Module,
   Param,
   Query,
@@ -8,9 +9,11 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth } from "@nestjs/swagger";
+import { ZodValidationPipe } from "nestjs-zod";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { JwtAuthGuard } from "../auth/guards.js";
 import { Prisma } from "@suchewohnung/database";
+import { ListingIdParamDto, ListingSearchQueryDto } from "./dto.js";
 
 /**
  * Forward search (§10.6) — catalog with query filters + cursor pagination
@@ -21,30 +24,22 @@ import { Prisma } from "@suchewohnung/database";
 @UseGuards(JwtAuthGuard)
 @Controller("api/v1/listings")
 export class ListingsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   @Get()
-  async search(
-    @Query("city") city?: string,
-    @Query("price_max") priceMax?: string,
-    @Query("price_min") priceMin?: string,
-    @Query("rooms_min") roomsMin?: string,
-    @Query("area_min") areaMin?: string,
-    @Query("limit") limit = "20",
-    @Query("cursor") cursor?: string,
-  ) {
-    const take = Math.min(Number(limit) || 20, 100);
+  async search(@Query(new ZodValidationPipe(ListingSearchQueryDto)) query: ListingSearchQueryDto) {
+    const take = query.limit;
     const where: Prisma.ListingWhereInput = { status: { in: ["active", "updated"] } };
-    if (city) where.city = city;
-    if (priceMax) where.price = { ...(where.price as object), lte: Number(priceMax) };
-    if (priceMin) where.price = { ...(where.price as object), gte: Number(priceMin) };
-    if (roomsMin) where.rooms = { gte: Number(roomsMin) };
-    if (areaMin) where.area = { gte: Number(areaMin) };
+    if (query.city) where.city = query.city;
+    if (query.price_max !== undefined) where.price = { ...(where.price as object), lte: query.price_max };
+    if (query.price_min !== undefined) where.price = { ...(where.price as object), gte: query.price_min };
+    if (query.rooms_min !== undefined) where.rooms = { gte: query.rooms_min };
+    if (query.area_min !== undefined) where.area = { gte: query.area_min };
 
     const rows = await this.prisma.listing.findMany({
       where,
       take: take + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
       orderBy: { firstSeenAt: "desc" },
       include: { images: { orderBy: { position: "asc" } } },
     });
@@ -61,9 +56,9 @@ export class ListingsController {
   }
 
   @Get(":id")
-  async detail(@Param("id") id: string) {
+  async detail(@Param(new ZodValidationPipe(ListingIdParamDto)) params: ListingIdParamDto) {
     const listing = await this.prisma.listing.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: { images: { orderBy: { position: "asc" } } },
     });
     if (!listing) throw new NotFoundException("Listing not found");
@@ -71,9 +66,9 @@ export class ListingsController {
   }
 
   @Get(":id/history")
-  async history(@Param("id") id: string) {
+  async history(@Param(new ZodValidationPipe(ListingIdParamDto)) params: ListingIdParamDto) {
     const data = await this.prisma.listingHistory.findMany({
-      where: { listingId: id },
+      where: { listingId: params.id },
       orderBy: { changedAt: "desc" },
     });
     return { data };

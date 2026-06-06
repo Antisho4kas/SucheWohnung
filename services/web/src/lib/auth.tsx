@@ -10,14 +10,15 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1";
-
-interface User {
-  id: string;
-  email: string;
-  role: string;
-}
+import {
+  api,
+  clearAuthSession,
+  getStoredAccessToken,
+  setAuthFailureHandler,
+  storeAuthSession,
+  type RegisterResponse,
+  type User,
+} from "./api";
 
 interface AuthState {
   user: User | null;
@@ -25,29 +26,18 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  register: (email: string, password: string) => Promise<RegisterResponse>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
-async function apiFetch(path: string, options: RequestInit = {}): Promise<unknown> {
-  const token = localStorage.getItem("auth_token");
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string> | undefined),
+function toAuthUser(user: User): User {
+  return {
+    ...user,
+    id: user.id ?? "",
+    role: user.role ?? "user",
   };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const body = await res.json();
-
-  if (!res.ok) {
-    const msg = body?.error?.message ?? body?.message ?? "Request failed";
-    throw new Error(msg);
-  }
-
-  return body;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -56,69 +46,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  const clearSession = useCallback(() => {
+    clearAuthSession();
+    setToken(null);
+    setUser(null);
+  }, []);
+
   useEffect(() => {
-    const stored = localStorage.getItem("auth_token");
+    setAuthFailureHandler(() => {
+      clearSession();
+      router.push("/login");
+    });
+
+    return () => setAuthFailureHandler(null);
+  }, [clearSession, router]);
+
+  useEffect(() => {
+    const stored = getStoredAccessToken();
     if (stored) {
       setToken(stored);
-      apiFetch("/me")
-        .then((data: unknown) => {
-          const d = data as { data?: { email?: string; id?: string; role?: string } };
-          const u = d?.data;
-          if (u?.email) setUser({ id: u.id ?? "", email: u.email, role: u.role ?? "user" });
-          else throw new Error("no user");
-        })
+      api
+        .getMe()
+        .then((u) => setUser(toAuthUser(u)))
         .catch(() => {
-          localStorage.removeItem("auth_token");
-          setToken(null);
+          clearSession();
         })
         .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
-  }, []);
+  }, [clearSession]);
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const res = (await apiFetch("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      })) as { access_token?: string; refresh_token?: string };
+      const res = await api.login({ email, password });
 
       const accessToken = res.access_token ?? "";
       if (!accessToken) throw new Error("No access token");
 
-      localStorage.setItem("auth_token", accessToken);
+      storeAuthSession(res);
       setToken(accessToken);
 
-      const me = (await apiFetch("/me")) as { data?: { id?: string; email?: string; role?: string } };
-      const u = me?.data;
-      if (u) setUser({ id: u.id ?? "", email: u.email ?? "", role: u.role ?? "user" });
+      const u = res.user ?? (await api.getMe());
+      setUser(toAuthUser(u));
       router.push("/dashboard");
     },
     [router],
   );
 
-  const register = useCallback(
-    async (email: string, password: string) => {
-      const res = (await apiFetch("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      })) as { id?: string };
+  const register = useCallback(async (email: string, password: string) => {
+    const res = await api.register({ email, password });
 
-      if (!res.id) throw new Error("Registration failed");
+    if (!res.id) throw new Error("Registration failed");
 
-      // Auto-login after registration
-      await login(email, password);
-    },
-    [login],
-  );
+    return res;
+  }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("auth_token");
-    setToken(null);
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await api.logout();
+    } finally {
+      clearSession();
+    }
     router.push("/");
-  }, [router]);
+  }, [clearSession, router]);
 
   const value = useMemo(
     () => ({

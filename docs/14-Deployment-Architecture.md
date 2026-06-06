@@ -1,5 +1,7 @@
 # 14. Deployment Architecture (DevOps)
 
+This is target deployment architecture, not proof of a verified production deployment. Current implementation status and limitations are canonical in [`VALIDATION.md`](./VALIDATION.md).
+
 ## 13.1 Контейнеризация (Docker)
 
 Каждый компонент — отдельный образ, multi‑stage build (slim runtime, non‑root user, healthcheck).
@@ -34,13 +36,18 @@ CMD ["node", "dist/main.js"]
 
 ```yaml
 version: "3.9"
+x-app-env: &app-env
+  NODE_ENV: development
+  DATABASE_URL: postgresql://app:app@postgres:5432/suchewohnung?schema=public
+  REDIS_URL: redis://redis:6379
+
 services:
   postgres:
     image: postgis/postgis:16-3.4
     environment:
       POSTGRES_DB: suchewohnung
       POSTGRES_USER: app
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: app
     volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U app"], interval: 10s }
 
@@ -51,46 +58,55 @@ services:
 
   api:
     build: ./services/api
-    env_file: .env
+    environment: *app-env
     depends_on: [postgres, redis]
-    ports: ["3000:3000"]
+    ports: ["127.0.0.1:3001:3000"] # direct API; nginx exposes API proxy on host 3000
 
   worker-collect:
     build: ./services/worker
     command: ["node", "dist/workers/collect.js"]
-    env_file: .env
+    environment: *app-env
     depends_on: [postgres, redis]
     deploy: { replicas: 2 }
 
   worker-match:
     build: ./services/worker
     command: ["node", "dist/workers/match.js"]
-    env_file: .env
+    environment: *app-env
     depends_on: [postgres, redis]
 
   worker-notify:
     build: ./services/worker
     command: ["node", "dist/workers/notify.js"]
-    env_file: .env
+    environment: *app-env
     depends_on: [postgres, redis]
 
   scheduler:
     build: ./services/worker
     command: ["node", "dist/workers/scheduler.js"]
-    env_file: .env
+    environment: *app-env
     depends_on: [redis]
 
   telegram-bot:
+    profiles: ["telegram"]
     build: ./services/bot
-    env_file: .env
+    environment: *app-env
     depends_on: [postgres, redis]
 
   web:
     build: ./services/web
-    ports: ["8080:80"]
+
+  nginx:
+    image: nginx:alpine
+    depends_on: [web, api]
+    ports: ["127.0.0.1:80:80", "127.0.0.1:3000:3000"]
 
 volumes: { pgdata: {}, redisdata: {} }
 ```
+
+Local/staging compose host ports are intentionally unique and localhost-bound: PostgreSQL `127.0.0.1:5432`, Redis `127.0.0.1:6379`, direct API `127.0.0.1:3001`, nginx web `127.0.0.1:80`, nginx API proxy `127.0.0.1:3000`, Kleinanzeigen adapter `127.0.0.1:8000`, and immo-api adapter `127.0.0.1:8001`. Root `.dockerignore` excludes `.env`, secrets, dependency folders, build outputs, logs, local dumps, and tool output from the shared Node build context; `services/immo-api/.dockerignore` protects the service-local Python build context.
+
+Base `docker-compose.yml` does not load `.env`; it uses non-secret local smoke defaults so `docker compose config --quiet` can validate syntax without rendering real runtime secrets. Do not paste full `docker compose config` output from a shell or override that loads real secrets; use Docker/external secrets or an uncommitted local override for Telegram and staging credentials.
 
 ## 13.3 Production: оркестрация
 

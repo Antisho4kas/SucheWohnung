@@ -4,10 +4,11 @@
     "outDir": "./dist",
     "paths": {
       "@suchewohnung/shared": ["../../packages/shared/dist"],
-      "@suchewohnung/database": ["../../packages/database/dist"]
+      "@suchewohnung/database": ["../../packages/database/dist"],
+      "@suchewohnung/telegram": ["../../packages/telegram/dist"]
     },
     "baseUrl": "."
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["dist", "node_modules", "**/*.test.ts"]
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/test/**"]
 }

@@ -1,4 +1,5 @@
 import type { NormalizedListing, RawListing } from "../domain/listing.js";
+import type { RetryPolicyInput } from "./retry.js";
 
 /**
  * SourceConnector contract (§09.2). The core knows ONLY this interface and the
@@ -31,14 +32,25 @@ export interface Logger {
 
 export interface HttpClientResponse {
   readonly status: number;
+  readonly ok?: boolean;
   readonly headers: Record<string, string>;
   text(): Promise<string>;
   json<T = unknown>(): Promise<T>;
 }
 
+export interface HttpClientRequestInit {
+  readonly method?: string;
+  readonly headers?: Record<string, string>;
+  readonly body?: unknown;
+  readonly signal?: AbortSignal;
+  readonly timeoutMs?: number;
+  readonly throwOnHttpError?: boolean;
+  readonly retry?: RetryPolicyInput;
+}
+
 export interface HttpClient {
-  get(url: string, init?: Record<string, unknown>): Promise<HttpClientResponse>;
-  post(url: string, init?: Record<string, unknown>): Promise<HttpClientResponse>;
+  get(url: string, init?: HttpClientRequestInit): Promise<HttpClientResponse>;
+  post(url: string, init?: HttpClientRequestInit): Promise<HttpClientResponse>;
 }
 
 /** Lazily-created Playwright browser pool (§09.5). */
