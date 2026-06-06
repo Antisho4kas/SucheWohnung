@@ -3,6 +3,7 @@ FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY . .
 RUN npm ci
+RUN npx --yes prisma generate --schema=packages/database/prisma/schema.prisma
 RUN npm run build -w @suchewohnung/shared
 RUN npm run build -w @suchewohnung/database
 RUN npm run build -w @suchewohnung/web
