@@ -15,6 +15,7 @@ ENV NODE_ENV=production
 WORKDIR /app
 RUN useradd -m app
 COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/services/api/node_modules ./node_modules
 COPY --from=build /app/services/api/dist ./dist
 COPY --from=build /app/services/api/package.json ./package.json
 COPY --from=build /app/packages ./packages

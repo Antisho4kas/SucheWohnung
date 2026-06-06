@@ -21,6 +21,7 @@ export default defineConfig({
       "services/api/src/auth/jwt.strategy.test.ts",
       "services/api/src/common/errors.filter.test.ts",
       "services/api/src/config/configuration.test.ts",
+      "services/api/src/deployment/api-dockerfile.test.ts",
       "services/api/src/listings/dto.test.ts",
       "services/api/src/profiles/profiles.service.test.ts",
       "services/api/src/telegram/telegram-webhook.module.test.ts",
