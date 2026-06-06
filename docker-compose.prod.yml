@@ -30,9 +30,10 @@ services:
     restart: unless-stopped
 
   api:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/api:latest
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/api:latest
     env_file: .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://app:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/suchewohnung?schema=public
       REDIS_URL: redis://redis:6379
     ports:
@@ -45,10 +46,11 @@ services:
     restart: unless-stopped
 
   worker-collect:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/worker:latest
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/worker:latest
     command: ["node", "dist/workers/collect.js"]
     env_file: .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://app:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/suchewohnung?schema=public
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -59,10 +61,11 @@ services:
     restart: unless-stopped
 
   worker-match:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/worker:latest
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/worker:latest
     command: ["node", "dist/workers/match.js"]
     env_file: .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://app:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/suchewohnung?schema=public
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -73,10 +76,11 @@ services:
     restart: unless-stopped
 
   worker-notify:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/worker:latest
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/worker:latest
     command: ["node", "dist/workers/notify.js"]
     env_file: .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://app:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/suchewohnung?schema=public
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -87,10 +91,11 @@ services:
     restart: unless-stopped
 
   scheduler:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/worker:latest
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/worker:latest
     command: ["node", "dist/workers/scheduler.js"]
     env_file: .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://app:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/suchewohnung?schema=public
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -101,9 +106,10 @@ services:
     restart: unless-stopped
 
   bot:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/bot:latest
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/bot:latest
     env_file: .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgresql://app:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/suchewohnung?schema=public
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -114,8 +120,10 @@ services:
     restart: unless-stopped
 
   web:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4ka/suchewohnung}/web:latest
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/web:latest
     env_file: .env
+    environment:
+      NODE_ENV: production
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:

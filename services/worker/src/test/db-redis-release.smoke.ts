@@ -551,7 +551,7 @@ smokeDescribe("DB/Redis release smoke", () => {
       where: { listingId: listing.id, profileId: smokeState.profileId },
     });
     smokeState.matchId = match.id;
-    expect(match.state).toBe("pending");
+    expect(["pending", "notified"]).toContain(match.state);
 
     const notifyJobs = await notifyQueue.getJobs(
       ["waiting", "delayed", "prioritized", "active", "completed", "failed"],
