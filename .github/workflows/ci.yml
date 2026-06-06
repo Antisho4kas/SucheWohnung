@@ -76,8 +76,11 @@ jobs:
       - name: Generate Prisma Client
         run: npm run db:generate
 
-      - name: Build shared package for database seed
-        run: npm run build -w @suchewohnung/shared
+      - name: Build workspace packages for database seed and typecheck
+        run: |
+          npm run build -w @suchewohnung/shared
+          npm run build -w @suchewohnung/database
+          npm run build -w @suchewohnung/telegram
 
       - name: Reset clean PostGIS database
         run: node scripts/reset-smoke-db.mjs
