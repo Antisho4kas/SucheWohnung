@@ -405,17 +405,28 @@ function matchesConfig(raw: RawListing, config: LegWohnenConfig): boolean {
   return true;
 }
 
+const PARKING_RE =
+  /\b(Stellplatz|Stellplätze|Stellplaetze|Parkplatz|Parkplätze|Garage|Garagen|Tiefgarage|Tiefgaragenstellplatz|Außenstellplatz|Aussenstellplatz)\b/iu;
+const APARTMENT_TITLE_RE = /\b(Wohnung|Zimmer)\b/iu;
+const APARTMENT_BODY_RE = /\b(Wohnung|Zimmer-Wohnung|Wohnfläche)\b/iu;
+
 function isNonApartmentPage(
   html: string,
   title: string,
   pageText: string,
 ): boolean {
+  // IMPORTANT: never test the whole page HTML for parking-category paths such as
+  // `/immobilien/stellplaetze-garagen` or `/immobilien/parken`. The site's global
+  // navigation links to those categories on EVERY page, including real apartment
+  // detail pages, so a whole-HTML match misclassifies every listing as parking
+  // and the connector yields nothing. Decide from the listing's own title/body
+  // and the page-scoped `<!-- parken -->` marker instead.
   const combined = `${title} ${pageText}`;
+  const parkingTitle = PARKING_RE.test(title) && !APARTMENT_TITLE_RE.test(title);
   return (
     /<!--\s*parken\s*-->/iu.test(html) ||
-    /\/immobilien\/(stellplaetze-garagen|parken)/iu.test(html) ||
-    (/\b(Stellplatz|Parkplatz|Garage|Garagen)\b/iu.test(combined) &&
-      !/\b(Wohnung|Zimmer-Wohnung|Wohnfläche)\b/iu.test(combined))
+    parkingTitle ||
+    (PARKING_RE.test(combined) && !APARTMENT_BODY_RE.test(combined))
   );
 }
 

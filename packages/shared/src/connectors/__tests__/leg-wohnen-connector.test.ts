@@ -12,6 +12,7 @@ import {
   legSitemapIndexXml,
   legTwoWohnungenSitemapXml,
   legWohnungDetailHtml,
+  legWohnungDetailWithNavHtml,
   legWohnungenSitemapXml,
 } from "./fixtures/leg-wohnen-fixtures.js";
 
@@ -413,5 +414,49 @@ describe("LEG Wohnen connector", () => {
         ),
       ),
     ).rejects.toThrow("aborted");
+  });
+
+  it("treats a real apartment as an apartment even when the page carries site navigation linking to parking categories (regression)", async () => {
+    const connector = new LegWohnenConnector();
+    const oneEntrySitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.leg-wohnen.de/immobilien/detail/2914-11-M</loc></url>
+</urlset>`;
+    const get = vi.fn<ConnectorContext["http"]["get"]>(async (url) => {
+      const parsed = new URL(url);
+      if (parsed.pathname === "/") {
+        return textResponse(oneEntrySitemap);
+      }
+      if (parsed.pathname === "/immobilien/detail/2914-11-M") {
+        return textResponse(legWohnungDetailWithNavHtml);
+      }
+      throw new Error(`unexpected url: ${url}`);
+    });
+
+    const items = await collect(
+      connector.fetch(
+        makeCtx(
+          {
+            baseUrl: "https://www.leg-wohnen.de",
+            sitemapUrls: [
+              "https://www.leg-wohnen.de/?sitemap=wohnungen&type=1533906435&cHash=wohnungen",
+            ],
+            city: "Mönchengladbach",
+            rateLimitMs: 0,
+          },
+          get,
+        ),
+        {},
+      ),
+    );
+
+    // The page HTML contains `/immobilien/stellplaetze-garagen` and
+    // `/immobilien/parken` nav links, but it is a 2-room apartment and must be
+    // collected, not filtered out as parking.
+    expect(items).toHaveLength(1);
+    const mapped = connector.map(items[0]);
+    expect(mapped.externalId).toBe("2914-11-M");
+    expect(mapped.city).toBe("Mönchengladbach");
+    expect(mapped.rooms).toBe(2);
   });
 });

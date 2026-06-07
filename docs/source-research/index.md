@@ -8,7 +8,7 @@ Research date: 2026-06-05. Scope: currently implemented or seeded real sources. 
 
 | Source | Slug | Runtime Status | Dry-Run Status | Activation Recommendation | Main Constraint |
 | --- | --- | --- | --- | --- | --- |
-| [LEG Wohnen](./leg-wohnen.md) | `leg-wohnen` | Registered, inactive | `not run` | `beta` | Needs guard-owner approval, legal approval, and low-rate dry-run evidence. |
+| [LEG Wohnen](./leg-wohnen.md) | `leg-wohnen` | Registered, inactive | `completed` (2026-06-07) | `beta` (after parser fix + scan-budget + legal sign-off) | Critical parser bug found & fixed during dry-run; collected 1 valid listing, dedup holds. |
 | [WG-Gesucht](./wg-gesucht.md) | `wg-gesucht` | Exported/seeded, not default-registered | `blocked` | `disabled` | `/api/` disallowed; public JSON-LD only; legal/runtime approval missing. |
 | [Wohnungsboerse.net](./wohnungsboerse.md) | `wohnungsboerse` | Exported/seeded, not default-registered | `blocked` | `disabled` | Avoid robots-disallowed AJAX/RSS endpoints; legal/runtime approval missing. |
 | [Immobilo](./immobilo.md) | `immobilo` | Exported/seeded, not default-registered | `blocked` | `disabled` | Aggregator with high dedupe and upstream legal risk. |

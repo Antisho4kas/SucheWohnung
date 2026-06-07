@@ -99,3 +99,21 @@ export const legParkingDetailHtml = `<!DOCTYPE html>
     </main>
   </body>
 </html>`;
+
+// Regression fixture: a real apartment detail page that ALSO carries the site's
+// global navigation, which links to parking categories on every page. The
+// connector must still treat this as an apartment and not as a parking page.
+const legSiteNav = `
+    <header>
+      <nav class="main-nav">
+        <a href="/immobilien/wohnungen">Wohnungen</a>
+        <a href="/immobilien/stellplaetze-garagen">Stellplätze &amp; Garagen</a>
+        <a href="/immobilien/parken">Parken</a>
+        <a href="/immobilien/gewerbe">Gewerbe</a>
+      </nav>
+    </header>`;
+
+export const legWohnungDetailWithNavHtml = legWohnungDetailHtml.replace(
+  "<body>",
+  `<body>${legSiteNav}`,
+);

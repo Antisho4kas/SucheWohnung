@@ -1,6 +1,6 @@
 # LEG Wohnen Source Readiness
 
-Research date: 2026-06-05. Scope: implemented connector readiness, robots evidence, sitemap discovery, and dry-run gate. No live scraping or connector dry-run was run.
+Research date: 2026-06-05. Dry-run executed 2026-06-07 (low-rate, isolated staging DB). Scope: implemented connector readiness, robots evidence, sitemap discovery, dry-run gate, and a completed low-rate real-source dry-run with a critical parser bug found and fixed.
 
 ## Source Identity
 
@@ -97,33 +97,78 @@ Disallowed or out of scope:
 
 ## Dry-Run Command / Config
 
-- Command: none run. Live dry-run requires source activation guard owner approval first.
-- Current admin manual run is not a dry-run and requires an active, approved source; do not use it for this gate.
-- Proposed first dry-run config after approval:
+- Runner: `services/worker/src/dry-run.ts` (built to `dist/dry-run.js`). It reuses the
+  tested `runCollectJob` with a NO-OP match queue (so `match`/`notify` are never
+  enqueued and no notification can be produced), writes only to an isolated
+  database whose name must contain `dryrun`, and runs N times to check dedup.
+- Executed 2026-06-07 on the staging VPS against isolated DB `suchewohnung_dryrun`
+  (schema cloned from the live schema; PostGIS via `template_postgis`). The live
+  `suchewohnung` database and the running collect/match/notify workers were not
+  touched.
+- Config used:
 
 ```yaml
 sourceSlug: leg-wohnen
-maxItems: 5
 config:
   baseUrl: https://www.leg-wohnen.de
   sitemapIndexPath: /sitemap.xml
-  city: Mönchengladbach
-  minRooms: 1
-  maxRooms: 4
+  city: Wilhelmshaven      # first apartment available near the front of the wohnungen sitemap
   maxPages: 1
+  itemsPerRun: 1
   rateLimitMs: 1000
   userAgent: SucheWohnung/1.0
-notifications: disabled
-writeMode: dry-run-only
+notifications: disabled    # enforced structurally via no-op match queue
+writeMode: isolated-dry-run-db
+runs: 2                    # second run verifies dedup
 ```
 
 ## Dry-Run Status
 
-- Status: `not run`
-- Reason: this source is the recommended beta candidate, but no guard-owner approval was granted in this task.
-- Metrics: not collected (`fetched/new/errors` unavailable).
+- Status: `completed` (2026-06-07, low-rate, isolated DB).
+- Endpoints requested: `/sitemap.xml`, one `?sitemap=wohnungen` sitemap, and public
+  `/immobilien/detail/*` pages. All returned HTTP 200. No login, contact,
+  application, or form endpoints were requested.
+- Metrics:
+  - Run 1: status `success`, itemsFetched 1, itemsNew 1, itemsUpdated 0, errors 0.
+  - Run 2: status `success`, itemsFetched 1, itemsNew 0, itemsUpdated 1, errors 0.
+  - No duplicate flood: total listings in DB stayed at 1 across both runs.
+- Sample listing (passed quality gate, `status=active`):
+  - externalId `5117-1022-M`, url `/immobilien/detail/5117-1022-M`
+  - title "2-Zimmer-Wohnung in Wilhelmshaven-Heppens mieten"
+  - city Wilhelmshaven, postalCode 26384, rooms 2, area 65.88 m²
+  - cold rent (price) 415 €, warmRent not present on this listing
+  - images 10, attributes `{ provisionfrei: true }`
+
+## Critical Parser Bug Found And Fixed During Dry-Run
+
+- Symptom: the connector collected 0 listings from the live site and scanned
+  hundreds of detail pages without yielding.
+- Root cause: `isNonApartmentPage` tested the whole page HTML for
+  `/immobilien/(stellplaetze-garagen|parken)`. The site's global navigation links
+  to those parking categories on every page, so every detail page (including real
+  apartments) was misclassified as a parking page and dropped. Fixture tests
+  passed because the fixtures had no site navigation.
+- Fix: parking is now detected from the listing's own title/body and the
+  page-scoped `<!-- parken -->` marker; the whole-HTML category-path match was
+  removed. A regression test (apartment page carrying parking-category nav links)
+  was added. All connector tests pass.
+
+## Known Limitations / Follow-ups
+
+- The wohnungen sitemap mixes apartments and parking listings across all of
+  Germany (1000 entries per sitemap page). With an exact single-city filter and
+  `maxPages=1`, the connector performs a linear scan and may fetch many
+  non-matching detail pages before finding matches for a sparse city. Before broad
+  activation, add a per-run scan budget and/or city-scoped discovery to bound
+  request volume.
+- warmRent coverage varies per listing (cold rent is present; warm rent may be
+  absent).
 
 ## Activation Recommendation
 
-- Recommendation: `beta`
-- Rationale: registered connector, direct-landlord source, sitemap/detail strategy, and robots evidence make LEG the best first beta candidate. Activation is still blocked until legal approval and low-rate dry-run evidence are recorded.
+- Recommendation: `beta` once the parser fix is merged, with a bounded scan budget
+  and legal/ToS sign-off still required before enabling in production.
+- Rationale: with the fix, the connector collects valid, quality-gated apartment
+  listings from public sitemap/detail pages at low rate, dedup holds across runs,
+  and no disallowed endpoints are touched. Activation remains gated on documented
+  legal/ToS approval and a scan-volume safeguard.
