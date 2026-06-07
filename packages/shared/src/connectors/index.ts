@@ -14,6 +14,10 @@ export * from "./mock-connector.js";
 export {
   KleinanzeigenConnector,
   KLEINANZEIGEN_SOURCE_SLUG,
+  deriveKleinanzeigenSearchAreas,
+  type KleinanzeigenSearchArea,
+  type ProfileForAreas,
+  type ProfileFilterLite,
 } from "./kleinanzeigen-connector.js";
 export {
   ImmoweltConnector,

@@ -7,6 +7,7 @@ import {
   getSourceActivationDecision,
   runQualityGate,
   computeFingerprint,
+  deriveKleinanzeigenSearchAreas,
   type ConnectorContext,
   type ConnectorRegistry,
   type DecryptedCredentials,
@@ -14,6 +15,7 @@ import {
   type ListingImage,
   type GeoPoint,
   type NormalizedListing,
+  type ProfileForAreas,
 } from "@suchewohnung/shared";
 
 type CollectJob = { data: { sourceSlug: string; cursor?: string } };
@@ -107,6 +109,12 @@ export type CollectDeps = {
   matchQueue: MatchQueueLike;
   connectors: ConnectorRegistryLike;
   decryptCredential?: (encryptedSecret: unknown) => Promise<JsonObject>;
+  /**
+   * Loads active search profiles (with their filters) so profile-driven
+   * sources can derive their crawl areas. Optional: when absent, sources fall
+   * back to their static config.
+   */
+  loadProfilesForAreas?: () => Promise<ProfileForAreas[]>;
 };
 
 type RunMetrics = {
@@ -1091,9 +1099,43 @@ export async function runCollectJob(
   const abortController = new AbortController();
   let ctx: ConnectorContext | undefined;
 
+  // Profile-driven sources derive their crawl areas from active search
+  // profiles (location + radius + max price) instead of a fixed config city.
+  let effectiveSource = source;
+  const baseConfig = asObject(source.config);
+  if (baseConfig.profileDriven === true && deps.loadProfilesForAreas) {
+    try {
+      const profiles = await deps.loadProfilesForAreas();
+      const maxAreas =
+        typeof baseConfig.maxAreas === "number" ? baseConfig.maxAreas : 10;
+      const areas = deriveKleinanzeigenSearchAreas(profiles, maxAreas);
+      if (areas.length > 0) {
+        effectiveSource = {
+          ...source,
+          config: { ...baseConfig, searchAreas: areas },
+        };
+        console.log(
+          `[collect] ${sourceSlug}: profile-driven areas: ${areas
+            .map((a) => a.location)
+            .join(", ")}`,
+        );
+      } else {
+        console.log(
+          `[collect] ${sourceSlug}: profile-driven enabled but no profile-derived areas; using base config`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[collect] ${sourceSlug}: failed to derive profile areas: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+
   try {
     ctx = await buildConnectorContext(
-      source,
+      effectiveSource,
       abortController.signal,
       deps.decryptCredential,
     );
@@ -1184,6 +1226,32 @@ export function startCollectWorker(): Worker {
   const registry = createDefaultConnectorRegistry();
   const connection = createRedisConnection();
   const matchQueue = new Queue("match", { connection });
+  const prismaClient = prisma as unknown as {
+    searchProfile: {
+      findMany: (args: unknown) => Promise<
+        Array<{
+          filters: Array<{
+            operator: string;
+            value: unknown;
+            definition: { key: string };
+          }>;
+        }>
+      >;
+    };
+  };
+  const loadProfilesForAreas = async (): Promise<ProfileForAreas[]> => {
+    const rows = await prismaClient.searchProfile.findMany({
+      where: { isActive: true },
+      include: { filters: { include: { definition: true } } },
+    });
+    return rows.map((p) => ({
+      filters: p.filters.map((f) => ({
+        key: f.definition.key,
+        operator: f.operator,
+        value: f.value,
+      })),
+    }));
+  };
   const worker = new Worker(
     "collect",
     async (job) =>
@@ -1191,6 +1259,7 @@ export function startCollectWorker(): Worker {
         prisma: prisma as unknown as PrismaLike,
         matchQueue,
         connectors: registry,
+        loadProfilesForAreas,
       }),
     {
       connection,

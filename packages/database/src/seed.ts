@@ -106,6 +106,12 @@ export const SEED_SOURCES: SeedSource[] = [
         searchPath: "/inserate",
         detailPath: "/inserat/{adid}",
         query: "wohnung mieten",
+        // Profile-driven: the collector crawls one search area per active
+        // search profile (location + radius + max price). `city`/`maxPrice`
+        // below are only the fallback used when no profile yields an area.
+        profileDriven: true,
+        maxAreas: 10,
+        itemsPerArea: 25,
         city: "berlin",
         maxPrice: 2000,
         maxPages: 2,
