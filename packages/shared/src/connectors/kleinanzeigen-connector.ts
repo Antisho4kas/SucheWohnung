@@ -215,11 +215,16 @@ export class KleinanzeigenConnector implements SourceConnector {
             query: config.query,
           },
         ];
+    // In multi-area mode the budget is per-area (itemsPerArea); the single
+    // global `maxItems` is intentionally not applied as a cross-area total so
+    // each profile area is crawled independently (overall bound is
+    // maxAreas * itemsPerArea). In single-area mode the global cap applies.
     const perAreaMax = multiArea ? config.itemsPerArea : globalMax;
+    const totalCap = multiArea ? Number.POSITIVE_INFINITY : globalMax;
 
     let totalYielded = 0;
     for (const area of areas) {
-      if (totalYielded >= globalMax) break;
+      if (totalYielded >= totalCap) break;
       let areaYielded = 0;
       try {
         const searchUrl = new URL(
@@ -254,7 +259,7 @@ export class KleinanzeigenConnector implements SourceConnector {
           const priceNum = item.price ? Number(item.price) : 0;
           if (priceNum < 50) continue;
           if (areaYielded >= perAreaMax) break;
-          if (totalYielded >= globalMax) break;
+          if (totalYielded >= totalCap) break;
 
           // Fetch listing details for area/rooms/images
           const detail: {

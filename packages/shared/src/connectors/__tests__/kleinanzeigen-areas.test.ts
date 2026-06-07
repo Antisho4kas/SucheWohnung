@@ -227,4 +227,46 @@ describe("KleinanzeigenConnector profile-driven multi-area fetch", () => {
     const items = await collect(connector.fetch(ctx, {}));
     expect(items).toHaveLength(2);
   });
+
+  it("does not let a small global maxItems starve later areas (per-area budget)", async () => {
+    const connector = new KleinanzeigenConnector();
+    const get = vi.fn<ConnectorContext["http"]["get"]>(async (url) => {
+      const parsed = new URL(url);
+      if (parsed.pathname.endsWith("/inserate")) {
+        const loc = parsed.searchParams.get("location");
+        return jsonResponse({
+          results: Array.from({ length: 2 }, (_, i) => ({
+            adid: `${loc}-${i}`,
+            url: `https://example.test/${loc}-${i}`,
+            title: "Wohnung",
+            price: "700",
+            description: null,
+            published_at: null,
+          })),
+        });
+      }
+      return jsonResponse({ data: { details: {} } });
+    });
+
+    const ctx = makeCtx(
+      {
+        baseUrl: "http://kleinanzeigen-api:8000",
+        searchPath: "/inserate",
+        detailPath: "/inserat/{adid}",
+        maxPages: 1,
+        itemsPerArea: 25,
+        searchAreas: [
+          { location: "Ingolstadt", maxPrice: 850 },
+          { location: "Reichertshofen", maxPrice: 850 },
+        ],
+      },
+      get,
+    );
+
+    // Even with a tiny global cap, both areas are crawled in multi-area mode.
+    const items = await collect(connector.fetch(ctx, { maxItems: 1 }));
+    const cities = new Set(items.map((i) => i.city));
+    expect(cities).toEqual(new Set(["Ingolstadt", "Reichertshofen"]));
+    expect(items).toHaveLength(4);
+  });
 });
