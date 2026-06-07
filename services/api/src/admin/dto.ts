@@ -14,7 +14,11 @@ const FilterOperatorSchema = z.enum(["gte", "lte", "eq", "in", "within"]);
 
 const stringLimit = (fallback: number, max: number) =>
   z
-    .string()
+    // Accept string (raw query value) OR number. A global ZodValidationPipe plus a
+    // per-route ZodValidationPipe can run this schema twice; after the first pass
+    // the value is already a number, so the input type must tolerate both to avoid
+    // a spurious "expected string, received number" on the second pass.
+    .union([z.string(), z.number()])
     .optional()
     .transform((value) => (value === undefined ? fallback : Number(value)))
     .pipe(z.number().int().positive().max(max));
