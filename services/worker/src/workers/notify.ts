@@ -64,6 +64,7 @@ type PrismaLike = {
   };
   notification: {
     findUnique(args: unknown): Promise<NotificationRecord | null>;
+    findFirst(args: unknown): Promise<NotificationRecord | null>;
     create(args: unknown): Promise<NotificationRecord>;
     updateMany(args: unknown): Promise<unknown>;
   };
@@ -213,6 +214,32 @@ async function markMatchNotified(
     where: { id: matchId, state: "pending" },
     data: { state: "notified" },
   });
+}
+
+/**
+ * Anti-spam (per-user/per-listing): returns true when this listing has already
+ * been delivered to this subscription via a DIFFERENT profile/rule. The same
+ * apartment can match several overlapping search rules; we deliver it to the
+ * user only once. Re-notification on real changes within the SAME rule is
+ * preserved (different profile id is required to suppress).
+ */
+async function listingAlreadyDeliveredViaOtherRule(args: {
+  deps: NotifyDeps;
+  subscriptionId: string;
+  listingId: string;
+  profileId: string;
+}): Promise<boolean> {
+  const existing = await args.deps.prisma.notification.findFirst({
+    where: {
+      subscriptionId: args.subscriptionId,
+      status: "sent",
+      match: {
+        listingId: args.listingId,
+        profileId: { not: args.profileId },
+      },
+    },
+  });
+  return existing != null;
 }
 
 async function delayJob(args: {
@@ -420,6 +447,21 @@ export async function runNotifyJob(
 
   const changeVersion = loadChangeVersion(job, match);
   for (const subscription of subscriptions) {
+    // Anti-spam: skip if this listing already reached this user via another rule.
+    if (
+      await listingAlreadyDeliveredViaOtherRule({
+        deps,
+        subscriptionId: subscription.id,
+        listingId: match.listing.id,
+        profileId: match.profile.id,
+      })
+    ) {
+      console.log(
+        `[notify] Listing ${match.listing.id} already delivered to subscription ${subscription.id} via another rule; skipping duplicate`,
+      );
+      continue;
+    }
+
     const dedupeKey = createTelegramDedupeKey({
       subscriptionId: `${subscription.id}:${match.profile.id}`,
       listingId: match.listing.id,

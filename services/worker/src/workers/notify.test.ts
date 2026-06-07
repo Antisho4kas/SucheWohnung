@@ -79,6 +79,7 @@ function createPrisma(match = createMatch()) {
     },
     notification: {
       findUnique: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockImplementation(async ({ data }) => ({
         id: "notification-1",
         ...data,
@@ -352,6 +353,46 @@ describe("notify worker Telegram delivery", () => {
     expect(deps.telegramApi.sendMessage).not.toHaveBeenCalled();
     expect(deps.telegramApi.sendPhoto).not.toHaveBeenCalled();
     expect(prisma.match.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("skips delivery when the listing already reached the user via another rule", async () => {
+    const match = createMatch({
+      id: "match-2",
+      profile: {
+        id: "profile-2",
+        userId: "user-1",
+        notify: true,
+        user: {
+          telegramSubscriptions: [{ id: "sub-1", chatId: 12345n, enabled: true }],
+        },
+      },
+    });
+    const prisma = createPrisma(match);
+    // A 'sent' notification already exists for this subscription + listing via
+    // a different profile/rule.
+    prisma.notification.findFirst.mockResolvedValue({
+      id: "notification-prior",
+      status: "sent",
+    });
+    const deps = createDeps({ prisma });
+
+    await runNotifyJob(createJob({ data: { matchId: "match-2", event: "created" } }) as any, "lock-token", deps);
+
+    expect(prisma.notification.findFirst).toHaveBeenCalledWith({
+      where: {
+        subscriptionId: "sub-1",
+        status: "sent",
+        match: { listingId: "listing-1", profileId: { not: "profile-2" } },
+      },
+    });
+    expect(prisma.notification.create).not.toHaveBeenCalled();
+    expect(deps.telegramApi.sendMessage).not.toHaveBeenCalled();
+    expect(deps.telegramApi.sendPhoto).not.toHaveBeenCalled();
+    // The duplicate match is still marked notified so it is not retried.
+    expect(prisma.match.updateMany).toHaveBeenCalledWith({
+      where: { id: "match-2", state: "pending" },
+      data: { state: "notified" },
+    });
   });
 
   it("sends a changed notification for an already notified match", async () => {
