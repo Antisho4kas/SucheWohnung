@@ -144,10 +144,14 @@ services:
     restart: unless-stopped
 
   # Self-hosted ebay-kleinanzeigen adapter (DanielWTE/ebay-kleinanzeigen-api).
+  # Upstream publishes no prebuilt image, so we build from a pinned commit of
+  # their public repo (FastAPI + Playwright/Chromium, listens on :8000).
   # The kleinanzeigen connector reads listings from this service over the
   # compose network at http://kleinanzeigen-api:8000.
   kleinanzeigen-api:
-    image: ghcr.io/danielwte/ebay-kleinanzeigen-api:latest
+    image: suchewohnung-kleinanzeigen-api:local
+    build:
+      context: "https://github.com/DanielWTE/ebay-kleinanzeigen-api.git#1129536bb10e4d1c3b06e295beac0fe3f36f2a7d"
     environment:
       HEADLESS: "true"
     restart: unless-stopped

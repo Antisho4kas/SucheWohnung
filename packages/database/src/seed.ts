@@ -99,7 +99,10 @@ export const SEED_SOURCES: SeedSource[] = [
         // Reads listings via the self-hosted ebay-kleinanzeigen-api adapter
         // (DanielWTE/ebay-kleinanzeigen-api) reachable on the compose network.
         baseUrl: "http://kleinanzeigen-api:8000",
-        healthPath: "/health",
+        // Upstream adapter exposes no /health route; root "/" returns
+        // {"status":"operational"} with HTTP 200, which the connector's
+        // status-only health check treats as healthy.
+        healthPath: "/",
         searchPath: "/inserate",
         detailPath: "/inserat/{adid}",
         query: "wohnung mieten",
