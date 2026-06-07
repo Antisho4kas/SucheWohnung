@@ -167,17 +167,25 @@ verified live with the Playwright MCP browser.
 - BUG-4 (fixed): admin panel used `Promise.all`; any one failing call (audit logs)
   blanked the entire panel. Now uses `Promise.allSettled`.
 
-### REMAINING BLOCKER (backend — filed, not fixed in this frontend task)
-- BLOCKER-3: `GET /api/v1/admin/logs` returns **400**
+### BLOCKER-3 (backend — FIXED & deployed)
+- Symptom: `GET /api/v1/admin/logs` returned **400**
   `{ code: VALIDATION_ERROR, limit: "expected string, received number" }` for both
-  absent and string `limit`. The running api image's compiled
-  `AdminLogsQuerySchema` (`z.string().optional().transform(Number).pipe(z.number())`)
-  looks correct, so the fault is in the query `ZodValidationPipe` coercion path on the
-  backend (the value reaches the schema as a number). Impact: the admin "Letzte
-  Aktivitäten" (audit logs) panel stays empty; the rest of the admin panel works due
-  to BUG-4 fix. Owner: backend. Recommended: have the query pipe pass raw string query
-  values to the schema (the schema already coerces), and add a test for
-  `AdminLogsQuerySchema.parse({})` and a request without `limit`.
+  absent and string `limit`.
+- Root cause: the app registers a global `APP_PIPE` `ZodValidationPipe` AND the route
+  also declares `@Query(new ZodValidationPipe(AdminLogsQueryDto))`. The schema runs
+  twice; the first pass transforms the `limit` string into a number, so the second
+  pass re-validates a number against the schema's leading `z.string()` and fails.
+- Fix: `stringLimit` now accepts `z.union([z.string(), z.number()])` before the
+  numeric transform, so it is idempotent across a double pipe pass. Regression tests
+  added (`dto.test.ts`): absent param applies the default, and an already-numeric
+  limit validates. Deployed by rebuilding `suchewohnung-api:9cb8e16` and recreating
+  the `api` service.
+- Verified live: `GET /admin/logs` (no token) → **401** (not 400); after an admin
+  action the audit-logs panel shows the entry
+  (`admin.source.toggle {...}`); `/admin` loads with **0 console errors**.
+- Follow-up (optional, not done): the redundant per-route `ZodValidationPipe`
+  instances are unnecessary given the global pipe and could be removed repo-wide in a
+  dedicated cleanup; left as-is to keep this change minimal.
 
 ### Notes / residual
 - Telegram deep link uses bot username `SucheWohngBot` (verify this is the intended
