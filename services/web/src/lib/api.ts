@@ -996,7 +996,13 @@ export const api = {
   },
 
   getAuditLogs: async () => {
-    const data = await request<Record<string, unknown>[]>("/admin/logs");
+    // Explicit page size. NOTE: the deployed /admin/logs currently returns 400
+    // ("limit: expected string, received number") regardless of this param — a
+    // backend query-validation bug (filed as a blocker). The admin page tolerates
+    // this failure (independent section loading) so the rest of the panel works.
+    const data = await request<Record<string, unknown>[]>(
+      "/admin/logs?limit=50",
+    );
     return (data ?? []).map(mapAdminAuditLog);
   },
 };

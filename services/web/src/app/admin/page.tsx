@@ -63,22 +63,19 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchAll = async () => {
-    try {
-      const [s, src, q, a] = await Promise.all([
-        api.getAdminStats(),
-        api.getAdminSources(),
-        api.getQueueStatus(),
-        api.getAuditLogs(),
-      ]);
-      setStats(s);
-      setSources(src);
-      setQueue(q);
-      setAuditLogs(a.slice(0, 20));
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false);
-    }
+    // Load each section independently so one failing endpoint does not blank the
+    // whole panel (e.g. audit logs failing must not hide sources/stats/queues).
+    const [s, src, q, a] = await Promise.allSettled([
+      api.getAdminStats(),
+      api.getAdminSources(),
+      api.getQueueStatus(),
+      api.getAuditLogs(),
+    ]);
+    if (s.status === "fulfilled") setStats(s.value);
+    if (src.status === "fulfilled") setSources(src.value);
+    if (q.status === "fulfilled") setQueue(q.value);
+    if (a.status === "fulfilled") setAuditLogs(a.value.slice(0, 20));
+    setLoading(false);
   };
 
   useEffect(() => {
