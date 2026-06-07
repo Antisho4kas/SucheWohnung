@@ -170,8 +170,12 @@ services:
     build:
       context: .
       dockerfile: services/web/Dockerfile
+      args:
+        # Baked into the bundle at build time (Next.js inlines NEXT_PUBLIC_*).
+        # Same-origin relative base; nginx proxies /api/ -> api:3000.
+        NEXT_PUBLIC_API_URL: /api/v1
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
+      NEXT_PUBLIC_API_URL: /api/v1
     depends_on:
       api:
         condition: service_started

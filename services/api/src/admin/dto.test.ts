@@ -17,6 +17,19 @@ describe("admin DTO validation", () => {
     expect(() => AdminLogsQuerySchema.parse({ limit: "501" })).toThrow();
   });
 
+  it("applies default limit when the query param is absent", () => {
+    expect(AdminUsersQuerySchema.parse({})).toEqual({ limit: 50 });
+    expect(AdminLogsQuerySchema.parse({})).toEqual({ limit: 100 });
+  });
+
+  it("accepts an already-numeric limit (double pipe pass)", () => {
+    // Simulates a global ZodValidationPipe having transformed the string to a
+    // number before a per-route pipe re-validates the same schema.
+    expect(AdminLogsQuerySchema.parse({ limit: 50 })).toEqual({ limit: 50 });
+    expect(AdminUsersQuerySchema.parse({ limit: 75 })).toEqual({ limit: 75 });
+    expect(() => AdminLogsQuerySchema.parse({ limit: 501 })).toThrow();
+  });
+
   it("validates admin user updates", () => {
     expect(AdminUpdateUserSchema.parse({ role: "admin", status: "active" })).toEqual({
       role: "admin",
