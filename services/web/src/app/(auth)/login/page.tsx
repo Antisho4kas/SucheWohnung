@@ -17,7 +17,7 @@ export default function LoginPage() {
   const formatLoginError = (err: unknown) => {
     const message = err instanceof Error ? err.message : t("login.failed");
     return message === "Email verification required"
-      ? "Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse."
+      ? t("login.verifyFirst")
       : message;
   };
 
@@ -41,7 +41,7 @@ export default function LoginPage() {
           href="/"
           className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-8 transition-colors"
         >
-          <ArrowLeft size={16} /> Zurück zur Startseite
+          <ArrowLeft size={16} /> {t("nav.backHome")}
         </Link>
 
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 p-8">
@@ -75,7 +75,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ihre@email.de"
+                  placeholder={t("login.emailPlaceholder")}
                   required
                   autoComplete="email"
                   className="pl-10"

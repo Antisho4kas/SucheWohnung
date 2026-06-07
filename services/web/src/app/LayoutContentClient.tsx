@@ -33,7 +33,7 @@ export default function LayoutContentClient({ children }: { children: React.Reac
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Stadt, PLZ..."
+                  placeholder={t("nav.searchPlaceholder")}
                   readOnly
                   className="w-56 pl-9 pr-4 py-2 text-sm bg-slate-100 dark:bg-slate-800 border-transparent rounded-xl focus:bg-white dark:focus:bg-slate-800 focus:border-primary/30 cursor-default"
                   tabIndex={-1}

@@ -34,6 +34,12 @@ const MOCK_READY_CONFIG = {
   activationApproved: true,
 } as const;
 
+// Approved, runtime-ready real sources (operator-approved for limited beta).
+const REAL_SOURCE_READY_CONFIG = {
+  lifecycleStatus: "ready",
+  activationApproved: true,
+} as const;
+
 const REAL_SOURCE_PERMISSION_NEEDED_CONFIG = {
   lifecycleStatus: "permission-needed",
   activationApproved: false,
@@ -85,20 +91,25 @@ export const SEED_SOURCES: SeedSource[] = [
     slug: KLEINANZEIGEN_SOURCE_SLUG,
     name: "eBay Kleinanzeigen",
     integrationType: "scrape",
-    isActive: false,
+    isActive: true,
     scheduleCron: "*/15 * * * *",
     rateLimitRpm: 10,
     config: withLifecycle(
       {
+        // Reads listings via the self-hosted ebay-kleinanzeigen-api adapter
+        // (DanielWTE/ebay-kleinanzeigen-api) reachable on the compose network.
+        baseUrl: "http://kleinanzeigen-api:8000",
+        healthPath: "/health",
+        searchPath: "/inserate",
+        detailPath: "/inserat/{adid}",
+        query: "wohnung mieten",
         city: "berlin",
-        minPrice: 0,
         maxPrice: 2000,
-        minArea: 20,
-        maxArea: 200,
-        minRooms: 1,
-        maxPages: 3,
+        maxPages: 2,
+        batchId: "suchewohnung",
+        itemsPerRun: 25,
       },
-      REAL_SOURCE_PERMISSION_NEEDED_CONFIG,
+      REAL_SOURCE_READY_CONFIG,
     ),
   },
   {
@@ -138,7 +149,7 @@ export const SEED_SOURCES: SeedSource[] = [
     slug: LEG_WOHNEN_SOURCE_SLUG,
     name: "LEG Wohnen",
     integrationType: "scrape",
-    isActive: false,
+    isActive: true,
     scheduleCron: "*/30 * * * *",
     rateLimitRpm: 6,
     config: withLifecycle(
@@ -149,9 +160,10 @@ export const SEED_SOURCES: SeedSource[] = [
         maxPages: 1,
         itemsPerRun: 25,
         rateLimitMs: 1000,
+        maxDetailFetches: 80,
         sitemapIndexPath: "/sitemap.xml",
       },
-      REAL_SOURCE_PERMISSION_NEEDED_CONFIG,
+      REAL_SOURCE_READY_CONFIG,
     ),
   },
   {

@@ -49,7 +49,7 @@ export default function RegisterPage() {
           href="/"
           className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-8 transition-colors"
         >
-          <ArrowLeft size={16} /> Zurück zur Startseite
+          <ArrowLeft size={16} /> {t("nav.backHome")}
         </Link>
 
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 p-8">
@@ -63,21 +63,21 @@ export default function RegisterPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-2">
-                  Bitte bestätigen Sie Ihre E-Mail
+                  {t("register.verifyTitle")}
                 </h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400 leading-6">
-                  Wir haben einen Bestätigungslink an{" "}
+                  {t("register.verifySentPrefix")}{" "}
                   <span className="font-semibold text-slate-700 dark:text-slate-200">
                     {pendingEmail}
                   </span>{" "}
-                  gesendet. Nach der Bestätigung können Sie sich anmelden.
+                  {t("register.verifySentSuffix")}
                 </p>
               </div>
               <Link
                 href="/login"
                 className="btn btn-primary w-full py-3 text-base"
               >
-                Zur Anmeldung
+                {t("register.toLogin")}
               </Link>
             </div>
           ) : (
@@ -112,7 +112,7 @@ export default function RegisterPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="ihre@email.de"
+                      placeholder={t("register.emailPlaceholder")}
                       required
                       autoComplete="email"
                       className="pl-10"
@@ -137,7 +137,7 @@ export default function RegisterPage() {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Mindestens 8 Zeichen"
+                      placeholder={t("register.passwordPlaceholder")}
                       required
                       minLength={8}
                       autoComplete="new-password"
@@ -163,7 +163,7 @@ export default function RegisterPage() {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Passwort wiederholen"
+                      placeholder={t("register.confirmPlaceholder")}
                       required
                       autoComplete="new-password"
                       className="pl-10"

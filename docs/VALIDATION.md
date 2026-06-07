@@ -28,15 +28,14 @@ README обновлен как operational overview и должен ссылат
 ## Known limitations
 
 - Не production-ready: нет production deployment sign-off, source legal approval и полного operational runbook.
-- `mock` — единственный active-by-default source.
-- Runtime-supported real connectors are inactive by default and still require onboarding/legal approval before activation.
+- `mock` plus operator-approved primary beta sources (`kleinanzeigen` via the self-hosted ebay-kleinanzeigen adapter, `leg-wohnen`) are active by default; other real connectors stay inactive and require onboarding/legal approval before activation.
 - `docs/source-research/` is reconnaissance only; it does not create production connector support or approval.
 - Local dev commands document the intended workflow, not availability of external secrets, Telegram credentials, live source access, Docker daemon, or production observability.
 
 ## Canonical implementation status
 
 - Runtime-supported connectors in the default collect worker registry: `mock`, `kleinanzeigen`, `immowelt`, `immoscout`, `leg-wohnen`.
-- Active by default in seed: `mock` only.
+- Active by default in seed: `mock`, `kleinanzeigen`, `leg-wohnen` (operator-approved primary beta sources).
 - Seeded/exported but not runtime-supported by the default collect registry: `wg-gesucht`, `immobilo`, `wohnungsboerse`.
 - Research-only direct landlord sources: see [`source-research/index.md`](./source-research/index.md). No production connector was written for those research notes.
 - Source activation gate: follow [`SOURCE-ONBOARDING.md`](./SOURCE-ONBOARDING.md) and [`LEGAL-ROBOTS-POLICY.md`](./LEGAL-ROBOTS-POLICY.md). Robots allowance alone is not production/legal approval.

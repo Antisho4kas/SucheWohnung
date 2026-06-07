@@ -44,6 +44,7 @@ const LegWohnenConfigSchema = createConnectorConfigSchema({
   maxRooms: z.number().min(0.5).max(20).optional(),
   maxPages: z.number().int().min(1).max(50).default(1),
   rateLimitMs: z.number().int().min(0).max(60_000).default(1_000),
+  maxDetailFetches: z.number().int().min(1).max(2_000).default(200),
   userAgent: z.string().min(1).default("SucheWohnung/1.0"),
 }).refine(
   (config) =>
@@ -151,9 +152,11 @@ export class LegWohnenConnector implements SourceConnector {
 
     const seenDetailUrls = new Set<string>();
     let yielded = 0;
+    let scanned = 0;
 
     for (const sitemapUrl of sitemapUrls.slice(0, config.maxPages)) {
       if (yielded >= maxItems) break;
+      if (scanned >= config.maxDetailFetches) break;
 
       let detailUrls: string[];
       try {
@@ -170,6 +173,7 @@ export class LegWohnenConnector implements SourceConnector {
 
       for (const detailUrl of detailUrls) {
         if (yielded >= maxItems) break;
+        if (scanned >= config.maxDetailFetches) break;
 
         const normalizedDetailUrl = normalizeDetailUrl(
           detailUrl,
@@ -177,6 +181,7 @@ export class LegWohnenConnector implements SourceConnector {
         );
         if (seenDetailUrls.has(normalizedDetailUrl)) continue;
         seenDetailUrls.add(normalizedDetailUrl);
+        scanned++;
 
         try {
           const html = await fetchText(ctx, normalizedDetailUrl, requestInit);

@@ -16,7 +16,7 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-sm text-slate-300 mb-8 backdrop-blur-sm">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Neue Wohnungen jeden Tag
+              {t("hero.badge")}
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-6">
               {t("hero.title")}
@@ -48,7 +48,7 @@ export default function HomePage() {
               </div>
               <div>
                 <p className="text-2xl font-extrabold text-white">250+</p>
-                <p className="text-sm text-slate-400">Wohnungen verfügbar</p>
+                <p className="text-sm text-slate-400">{t("hero.stats.listings")}</p>
               </div>
             </div>
             <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
@@ -57,7 +57,7 @@ export default function HomePage() {
               </div>
               <div>
                 <p className="text-2xl font-extrabold text-white">100+</p>
-                <p className="text-sm text-slate-400">Aktive Suchende</p>
+                <p className="text-sm text-slate-400">{t("hero.stats.searchers")}</p>
               </div>
             </div>
             <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
@@ -66,7 +66,7 @@ export default function HomePage() {
               </div>
               <div>
                 <p className="text-2xl font-extrabold text-white">500+</p>
-                <p className="text-sm text-slate-400">Benachrichtigungen</p>
+                <p className="text-sm text-slate-400">{t("hero.stats.notifications")}</p>
               </div>
             </div>
           </div>
@@ -81,7 +81,7 @@ export default function HomePage() {
               {t("hero.howItWorks")}
             </h2>
             <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
-              Drei einfache Schritte zu Ihrer neuen Wohnung
+              {t("hero.howItWorks.subtitle")}
             </p>
           </div>
 
@@ -98,9 +98,6 @@ export default function HomePage() {
               <p className="text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
                 {t("features.search.long")}
               </p>
-              <p className="text-sm text-slate-400 dark:text-slate-500 italic">
-                {t("features.search.ru")}
-              </p>
             </div>
 
             <div className="card card-hover text-center group">
@@ -115,9 +112,6 @@ export default function HomePage() {
               <p className="text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
                 {t("features.compare.long")}
               </p>
-              <p className="text-sm text-slate-400 dark:text-slate-500 italic">
-                {t("features.compare.ru")}
-              </p>
             </div>
 
             <div className="card card-hover text-center group">
@@ -131,9 +125,6 @@ export default function HomePage() {
               </h3>
               <p className="text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
                 {t("features.notify.long")}
-              </p>
-              <p className="text-sm text-slate-400 dark:text-slate-500 italic">
-                {t("features.notify.ru")}
               </p>
             </div>
           </div>

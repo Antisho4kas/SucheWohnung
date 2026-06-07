@@ -132,5 +132,10 @@ writeMode: dry-run-only
 
 ## Activation Recommendation
 
-- Recommendation: `blocked`
-- Rationale: public-site activation is not supported by current evidence. Keep disabled unless an official/partner/private adapter feed is documented and approved separately.
+- Recommendation: `ready` (operator-approved primary beta source, 2026-06-07).
+- Rationale: listings are read from the self-hosted `ebay-kleinanzeigen-api` adapter
+  (DanielWTE/ebay-kleinanzeigen-api) over the private compose network
+  (`http://kleinanzeigen-api:8000`), not by direct public-site HTML scraping from this
+  app. The operator has approved this adapter as a primary beta source and accepts the
+  associated legal/ToS responsibility for running the adapter. Keep the request rate low
+  (`rateLimitRpm<=10`, small `maxPages`).

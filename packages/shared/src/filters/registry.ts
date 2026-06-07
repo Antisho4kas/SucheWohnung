@@ -7,9 +7,24 @@ import { BOOLEAN_ATTRIBUTES, BUNDESLAENDER } from "../domain/enums.js";
  * The matching engine never hard-codes these — it reads them at runtime.
  */
 
+const BOOLEAN_ATTRIBUTE_LABELS: Record<
+  string,
+  { de: string; en: string; ru: string }
+> = {
+  balcony: { de: "Balkon", en: "Balcony", ru: "Балкон" },
+  terrace: { de: "Terrasse", en: "Terrace", ru: "Терраса" },
+  elevator: { de: "Aufzug", en: "Elevator", ru: "Лифт" },
+  parking: { de: "Parkplatz / Garage", en: "Parking / Garage", ru: "Парковка / Гараж" },
+  cellar: { de: "Keller", en: "Cellar", ru: "Подвал" },
+  furnished: { de: "Möbliert", en: "Furnished", ru: "С мебелью" },
+  pets_allowed: { de: "Haustiere erlaubt", en: "Pets allowed", ru: "Можно с животными" },
+  new_building: { de: "Neubau", en: "New building", ru: "Новостройка" },
+  provisionfrei: { de: "Provisionsfrei", en: "No commission", ru: "Без комиссии" },
+};
+
 const booleanFilters: FilterDefinition[] = BOOLEAN_ATTRIBUTES.map((key) => ({
   key,
-  label: { de: key, en: key, ru: key },
+  label: BOOLEAN_ATTRIBUTE_LABELS[key] ?? { de: key, en: key, ru: key },
   dataType: "bool",
   operatorSet: ["eq"],
   binding: { attribute: key },

@@ -142,6 +142,14 @@ export default function AdminPage() {
       "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
   };
 
+  const healthLabel: Record<AdminSource["health"], string> = {
+    healthy: t("admin.health.healthy"),
+    degraded: t("admin.health.degraded"),
+    failing: t("admin.health.failing"),
+    paused: t("admin.health.paused"),
+    unknown: t("admin.health.unknown"),
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -150,11 +158,11 @@ export default function AdminPage() {
             {t("admin.title")}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Systemübersicht und Verwaltung
+            {t("admin.subtitle")}
           </p>
         </div>
         <button onClick={fetchAll} className="btn btn-outline text-sm">
-          <RefreshCw size={16} /> Aktualisieren
+          <RefreshCw size={16} /> {t("admin.refresh")}
         </button>
       </div>
 
@@ -201,51 +209,51 @@ export default function AdminPage() {
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide ${healthClass(source.health)}`}
                     >
-                      {source.health}
+                      {healthLabel[source.health]}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-1">
                     {source.listings_count} {t("admin.sources.listingsCount")}
                     <span className="mx-2">·</span>
-                    breaker: {source.breakerState}
+                    {t("admin.sources.breaker")}: {source.breakerState}
                     <span className="mx-2">·</span>
-                    last run:{" "}
+                    {t("admin.sources.lastRun")}:{" "}
                     {formatAdminDate(source.lastRun?.startedAt ?? null)}
                     {source.lifecycleStatus && (
                       <>
                         <span className="mx-2">·</span>
-                        lifecycle: {source.lifecycleStatus}
+                        {t("admin.sources.lifecycle")}: {source.lifecycleStatus}
                       </>
                     )}
                   </p>
                   {source.lastRunStatus ? (
                     <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-4">
                       <span>
-                        status:{" "}
+                        {t("admin.sources.runStatus")}:{" "}
                         <strong className="text-slate-700 dark:text-slate-200">
                           {source.lastRunStatus}
                         </strong>
                       </span>
                       <span>
-                        fetched:{" "}
+                        {t("admin.sources.fetched")}:{" "}
                         <strong className="text-slate-700 dark:text-slate-200">
                           {source.itemsFetched}
                         </strong>
                       </span>
                       <span>
-                        new:{" "}
+                        {t("admin.sources.new")}:{" "}
                         <strong className="text-slate-700 dark:text-slate-200">
                           {source.itemsNew}
                         </strong>
                       </span>
                       <span>
-                        updated:{" "}
+                        {t("admin.sources.updated")}:{" "}
                         <strong className="text-slate-700 dark:text-slate-200">
                           {source.itemsUpdated}
                         </strong>
                       </span>
                       <span>
-                        errors:{" "}
+                        {t("admin.sources.errors")}:{" "}
                         <strong className="text-slate-700 dark:text-slate-200">
                           {source.errors}
                         </strong>
@@ -253,7 +261,7 @@ export default function AdminPage() {
                     </div>
                   ) : (
                     <p className="mt-2 text-xs text-slate-400">
-                      run metrics unavailable
+                      {t("admin.sources.noMetrics")}
                     </p>
                   )}
                 </div>
@@ -275,7 +283,7 @@ export default function AdminPage() {
           ))}
           {sources.length === 0 && (
             <p className="text-sm text-slate-400 text-center py-6">
-              Keine Quellen konfiguriert
+              {t("admin.sources.empty")}
             </p>
           )}
         </div>
@@ -314,7 +322,7 @@ export default function AdminPage() {
                     {q.depth}
                   </p>
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
-                    depth
+                    {t("admin.queues.depth")}
                   </p>
                   <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mt-2">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -323,13 +331,13 @@ export default function AdminPage() {
                     </span>
                     <span className="text-xs font-semibold text-slate-400">
                       <span className="inline-block w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 mr-1" />
-                      {q.waiting} waiting
+                      {q.waiting} {t("admin.queues.waiting")}
                     </span>
                     <span className="text-xs font-semibold text-slate-400">
-                      {q.delayed} delayed
+                      {q.delayed} {t("admin.queues.delayed")}
                     </span>
                     <span className="text-xs font-semibold text-rose-500">
-                      {q.failed} failed
+                      {q.failed} {t("admin.queues.failed")}
                     </span>
                   </div>
                 </div>

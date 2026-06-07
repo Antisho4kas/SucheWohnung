@@ -35,7 +35,10 @@ describe("source seed/runtime registry consistency", () => {
     const registered = new Set<string>(DEFAULT_CONNECTOR_REGISTRY_SLUGS);
     const activeSources = SEED_SOURCES.filter((source) => source.isActive);
 
-    expect(activeSources.map((source) => source.slug)).toEqual(["mock"]);
+    // Operator-approved primary beta sources active by default.
+    expect(activeSources.map((source) => source.slug).sort()).toEqual(
+      ["kleinanzeigen", "leg-wohnen", "mock"],
+    );
     for (const source of activeSources) {
       const decision = getSourceActivationDecision({
         sourceSlug: source.slug,

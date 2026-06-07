@@ -166,9 +166,10 @@ runs: 2                    # second run verifies dedup
 
 ## Activation Recommendation
 
-- Recommendation: `beta` once the parser fix is merged, with a bounded scan budget
-  and legal/ToS sign-off still required before enabling in production.
-- Rationale: with the fix, the connector collects valid, quality-gated apartment
-  listings from public sitemap/detail pages at low rate, dedup holds across runs,
-  and no disallowed endpoints are touched. Activation remains gated on documented
-  legal/ToS approval and a scan-volume safeguard.
+- Recommendation: `ready` (operator-approved primary beta source, 2026-06-07).
+- Rationale: with the parser fix and a bounded per-run scan budget
+  (`maxDetailFetches`, default 80 in seed), the connector collects valid, quality-gated
+  apartment listings from public sitemap/detail pages at low rate, dedup holds across
+  runs, and no disallowed endpoints are touched. The operator recorded legal/ToS
+  approval and activated it as a primary beta source. Rollback: set `isActive=false`
+  or lower `maxDetailFetches`/`itemsPerRun`.

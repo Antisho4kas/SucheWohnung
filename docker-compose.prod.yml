@@ -143,6 +143,15 @@ services:
       - api
     restart: unless-stopped
 
+  # Self-hosted ebay-kleinanzeigen adapter (DanielWTE/ebay-kleinanzeigen-api).
+  # The kleinanzeigen connector reads listings from this service over the
+  # compose network at http://kleinanzeigen-api:8000.
+  kleinanzeigen-api:
+    image: ghcr.io/danielwte/ebay-kleinanzeigen-api:latest
+    environment:
+      HEADLESS: "true"
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:

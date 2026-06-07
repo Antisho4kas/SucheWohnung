@@ -8,11 +8,11 @@ Research date: 2026-06-05. Scope: currently implemented or seeded real sources. 
 
 | Source | Slug | Runtime Status | Dry-Run Status | Activation Recommendation | Main Constraint |
 | --- | --- | --- | --- | --- | --- |
-| [LEG Wohnen](./leg-wohnen.md) | `leg-wohnen` | Registered, inactive | `completed` (2026-06-07) | `beta` (after parser fix + scan-budget + legal sign-off) | Critical parser bug found & fixed during dry-run; collected 1 valid listing, dedup holds. |
+| [LEG Wohnen](./leg-wohnen.md) | `leg-wohnen` | Registered, **active** | `completed` (2026-06-07) | `ready` (operator-approved primary beta) | Bounded scan (`maxDetailFetches`); legal/ToS sign-off recorded by operator. |
 | [WG-Gesucht](./wg-gesucht.md) | `wg-gesucht` | Exported/seeded, not default-registered | `blocked` | `disabled` | `/api/` disallowed; public JSON-LD only; legal/runtime approval missing. |
 | [Wohnungsboerse.net](./wohnungsboerse.md) | `wohnungsboerse` | Exported/seeded, not default-registered | `blocked` | `disabled` | Avoid robots-disallowed AJAX/RSS endpoints; legal/runtime approval missing. |
 | [Immobilo](./immobilo.md) | `immobilo` | Exported/seeded, not default-registered | `blocked` | `disabled` | Aggregator with high dedupe and upstream legal risk. |
-| [Kleinanzeigen](./kleinanzeigen.md) | `kleinanzeigen` | Registered, inactive | `blocked` | `blocked` | Current connector is local adapter scaffold; public-site scraping not approved. |
+| [Kleinanzeigen](./kleinanzeigen.md) | `kleinanzeigen` | Registered, **active** | `via adapter` | `ready` (operator-approved primary beta) | Reads via self-hosted ebay-kleinanzeigen-api adapter (DanielWTE); operator-approved. |
 | [ImmoScout24](./immoscout.md) | `immoscout` | Registered, inactive | `blocked` | `blocked` | Current connector is local/private adapter scaffold; official permission/API evidence missing. |
 | [Immowelt](./immowelt.md) | `immowelt` | Registered, inactive | `blocked` | `blocked` | Live public-page scraping lacks legal/dry-run evidence; site returned 403 on HEAD. |
 
