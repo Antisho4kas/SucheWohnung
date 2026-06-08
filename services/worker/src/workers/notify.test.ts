@@ -141,9 +141,8 @@ describe("notify worker Telegram delivery", () => {
     await runNotifyJob(job as any, "lock-token", deps);
 
     const dedupeKey = createTelegramDedupeKey({
-      subscriptionId: "sub-1:profile-1",
+      subscriptionId: "sub-1",
       listingId: "listing-1",
-      changeVersion: "2026-06-01T10:00:00.000Z",
     });
     expect(prisma.listingHistory.findFirst).not.toHaveBeenCalled();
     expect(prisma.notification.create).toHaveBeenCalledWith({
@@ -321,9 +320,8 @@ describe("notify worker Telegram delivery", () => {
     await runNotifyJob(createJob() as any, "lock-token", deps);
 
     const dedupeKey = createTelegramDedupeKey({
-      subscriptionId: "sub-1:profile-1",
+      subscriptionId: "sub-1",
       listingId: "listing-1",
-      changeVersion: "2026-06-01T10:00:00.000Z",
     });
     expect(prisma.notification.findUnique).toHaveBeenCalledWith({
       where: { dedupeKey },
@@ -355,7 +353,7 @@ describe("notify worker Telegram delivery", () => {
     expect(prisma.match.updateMany).not.toHaveBeenCalled();
   });
 
-  it("skips delivery when the listing already reached the user via another rule", async () => {
+  it("skips delivery when the listing already reached the user via any rule", async () => {
     const match = createMatch({
       id: "match-2",
       profile: {
@@ -368,8 +366,7 @@ describe("notify worker Telegram delivery", () => {
       },
     });
     const prisma = createPrisma(match);
-    // A 'sent' notification already exists for this subscription + listing via
-    // a different profile/rule.
+    // A 'sent' notification already exists for this subscription + listing.
     prisma.notification.findFirst.mockResolvedValue({
       id: "notification-prior",
       status: "sent",
@@ -382,7 +379,7 @@ describe("notify worker Telegram delivery", () => {
       where: {
         subscriptionId: "sub-1",
         status: "sent",
-        match: { listingId: "listing-1", profileId: { not: "profile-2" } },
+        match: { listingId: "listing-1" },
       },
     });
     expect(prisma.notification.create).not.toHaveBeenCalled();
@@ -416,9 +413,8 @@ describe("notify worker Telegram delivery", () => {
     );
 
     const dedupeKey = createTelegramDedupeKey({
-      subscriptionId: "sub-1:profile-1",
+      subscriptionId: "sub-1",
       listingId: "listing-1",
-      changeVersion: "2026-06-02T11:59:00.000Z",
     });
     expect(prisma.listingHistory.findFirst).not.toHaveBeenCalled();
     expect(prisma.notification.create).toHaveBeenCalledWith({

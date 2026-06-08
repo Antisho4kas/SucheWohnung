@@ -140,10 +140,9 @@ export async function sendTelegramListing(
 export function createTelegramDedupeKey(args: {
   subscriptionId: string;
   listingId: string;
-  changeVersion: string;
 }): string {
   const hash = createHash("sha256")
-    .update(`${args.subscriptionId}:${args.listingId}:${args.changeVersion}`)
+    .update(`${args.subscriptionId}:${args.listingId}`)
     .digest("hex");
   return `telegram:${hash}`;
 }

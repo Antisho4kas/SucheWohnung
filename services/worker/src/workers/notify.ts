@@ -93,12 +93,6 @@ function createDefaultDeps(connection = createRedisConnection()): NotifyDeps {
   };
 }
 
-function toIsoString(value: Date | string): string {
-  return value instanceof Date
-    ? value.toISOString()
-    : new Date(value).toISOString();
-}
-
 function isPrismaUniqueError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -112,17 +106,6 @@ function isLastAttempt(job: NotifyJob): boolean {
   const attempts = job.opts?.attempts ?? 1;
   const currentAttempt = (job.attemptsMade ?? 0) + 1;
   return currentAttempt >= attempts;
-}
-
-function loadChangeVersion(job: NotifyJob, match: MatchRecord): string {
-  const event = job.data.event ?? "created";
-  if (event === "changed") {
-    if (!job.data.changeVersion) {
-      throw new Error("changed notifications require changeVersion");
-    }
-    return toIsoString(job.data.changeVersion);
-  }
-  return toIsoString(match.listing.firstSeenAt);
 }
 
 async function getOrCreateNotification(args: {
@@ -218,25 +201,20 @@ async function markMatchNotified(
 
 /**
  * Anti-spam (per-user/per-listing): returns true when this listing has already
- * been delivered to this subscription via a DIFFERENT profile/rule. The same
- * apartment can match several overlapping search rules; we deliver it to the
- * user only once. Re-notification on real changes within the SAME rule is
- * preserved (different profile id is required to suppress).
+ * been delivered to this subscription via ANY rule/profile. A listing reaches
+ * the user exactly once across all search rules; once delivered it is never
+ * sent again (no re-notification on changes either, by product requirement).
  */
-async function listingAlreadyDeliveredViaOtherRule(args: {
+async function listingAlreadyDeliveredToSubscription(args: {
   deps: NotifyDeps;
   subscriptionId: string;
   listingId: string;
-  profileId: string;
 }): Promise<boolean> {
   const existing = await args.deps.prisma.notification.findFirst({
     where: {
       subscriptionId: args.subscriptionId,
       status: "sent",
-      match: {
-        listingId: args.listingId,
-        profileId: { not: args.profileId },
-      },
+      match: { listingId: args.listingId },
     },
   });
   return existing != null;
@@ -445,27 +423,24 @@ export async function runNotifyJob(
     return;
   }
 
-  const changeVersion = loadChangeVersion(job, match);
   for (const subscription of subscriptions) {
-    // Anti-spam: skip if this listing already reached this user via another rule.
+    // Anti-spam: skip if this listing already reached this user via any rule.
     if (
-      await listingAlreadyDeliveredViaOtherRule({
+      await listingAlreadyDeliveredToSubscription({
         deps,
         subscriptionId: subscription.id,
         listingId: match.listing.id,
-        profileId: match.profile.id,
       })
     ) {
       console.log(
-        `[notify] Listing ${match.listing.id} already delivered to subscription ${subscription.id} via another rule; skipping duplicate`,
+        `[notify] Listing ${match.listing.id} already delivered to subscription ${subscription.id}; skipping duplicate`,
       );
       continue;
     }
 
     const dedupeKey = createTelegramDedupeKey({
-      subscriptionId: `${subscription.id}:${match.profile.id}`,
+      subscriptionId: subscription.id,
       listingId: match.listing.id,
-      changeVersion,
     });
     const notification = await getOrCreateNotification({
       deps,
