@@ -10,7 +10,7 @@ import {
   type ProfileFilterFormValues,
 } from "../lib/api";
 import { useLocale } from "../lib/i18n";
-import { cityFromPlz } from "../lib/plz-data";
+import { cityFromPlz, geoFromPlz } from "../lib/plz-data";
 
 interface ProfileFormSubmitPayload {
   name: string;
@@ -108,13 +108,42 @@ export function ProfileForm({
     setValues((current) => ({ ...current, [key]: value }));
   };
 
+  // Fill the geo search center (city + Lat/Lng) from a postal code. The center
+  // coordinates always follow the PLZ; the radius is left untouched unless empty,
+  // in which case it defaults to 10 km so the geo filter is immediately valid.
+  const applyPlzLocation = (
+    next: ProfileFilterFormValues,
+    plz: string,
+    overwriteCity: boolean,
+  ): void => {
+    const city = cityFromPlz(plz);
+    if (city && (overwriteCity || !next.city)) {
+      next.city = city;
+    }
+    const geo = geoFromPlz(plz);
+    if (geo) {
+      next.lat = geo.lat;
+      next.lng = geo.lng;
+      if (stringifyValue(next.radius_km) === "") {
+        next.radius_km = 10;
+      }
+    }
+  };
+
   const updatePostalCode = (key: string, value: string) => {
     setValues((current) => {
       const next = { ...current, [key]: value };
-      const city = cityFromPlz(value);
-      if (value.length === 5 && city && !next.city) {
-        next.city = city;
+      if (value.length === 5) {
+        applyPlzLocation(next, value, false);
       }
+      return next;
+    });
+  };
+
+  const applyPlzToCityAndGeo = (plz: string) => {
+    setValues((current) => {
+      const next = { ...current };
+      applyPlzLocation(next, plz, true);
       return next;
     });
   };
@@ -196,7 +225,7 @@ export function ProfileForm({
                     !values.city && (
                       <button
                         type="button"
-                        onClick={() => updateValue("city", cityFromPlz(value))}
+                        onClick={() => applyPlzToCityAndGeo(value)}
                         className="text-xs text-primary mt-1 font-semibold hover:underline"
                       >
                         {t("profile.autoCity")}: {cityFromPlz(value)}
@@ -210,11 +239,18 @@ export function ProfileForm({
 
         {geoDefinitions.map((def) => {
           const label = getFilterLabel(def, locale);
+          const geoCenterCity = cityFromPlz(stringifyValue(values.postal_code));
+          const hasCoordinates =
+            stringifyValue(values.lat) !== "" &&
+            stringifyValue(values.lng) !== "";
           return (
             <div key={def.key} className="space-y-3">
               <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">
                 {label}
               </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {t("profile.geoHint")}
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="form-group">
                   <label htmlFor={`filter-${def.key}-lat`}>Lat</label>
@@ -258,6 +294,11 @@ export function ProfileForm({
                   />
                 </div>
               </div>
+              {hasCoordinates && geoCenterCity && (
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {t("profile.geoCenter")}: {geoCenterCity}
+                </p>
+              )}
             </div>
           );
         })}

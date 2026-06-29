@@ -144,6 +144,9 @@ const de = {
   "profile.validationError": "Bitte prüfen Sie die Filterwerte.",
   "profile.radiusIncomplete":
     "Für den Umkreis sind Lat, Lng und Radius erforderlich.",
+  "profile.geoHint":
+    "Die Koordinaten des Zentrums werden automatisch aus der PLZ übernommen. Der Radius bestimmt, wie weit rund um das Zentrum gesucht wird.",
+  "profile.geoCenter": "Zentrum",
   "profile.numericFilters": "Suchkriterien",
   "profile.price": "Preis",
   "profile.area": "Fläche",
@@ -354,6 +357,9 @@ const ru: DictShape = {
   "profile.filtersRequired": "Выберите хотя бы один фильтр.",
   "profile.validationError": "Проверьте значения фильтров.",
   "profile.radiusIncomplete": "Для радиуса нужны Lat, Lng и значение радиуса.",
+  "profile.geoHint":
+    "Координаты центра подставляются автоматически из индекса (PLZ). Радиус задаёт, как далеко искать вокруг центра.",
+  "profile.geoCenter": "Центр",
   "profile.numericFilters": "Критерии поиска",
   "profile.price": "Цена",
   "profile.area": "Площадь",

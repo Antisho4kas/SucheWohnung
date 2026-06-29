@@ -184,6 +184,7 @@ export const PLZ_TO_CITY: Record<string, string> = {
   "85244": "Röhrmoos", "85247": "Schwabhausen", "85250": "Altomünster",
   "85253": "Erdweg", "85254": "Sulzemoos", "85256": "Vierkirchen",
   "85258": "Weichs", "85259": "Sulzemoos",
+  "85276": "Pfaffenhofen an der Ilm", "85283": "Wolnzach",
   "85301": "Schweitenkirchen", "85302": "Gerolsbach", "85304": "Ilmmünster",
   "85305": "Jetzendorf", "85307": "Paunzhausen", "85309": "Pörnbach",
   "85354": "Freising", "85356": "Freising", "85368": "Moosburg",
@@ -223,4 +224,68 @@ export const PLZ_TO_CITY: Record<string, string> = {
 
 export function cityFromPlz(plz: string): string {
   return PLZ_TO_CITY[plz] ?? "";
+}
+
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
+/**
+ * City centroid coordinates (WGS84). Used to auto-fill the geo search center
+ * from a postal code / city so the user never has to look up Lat/Lng by hand.
+ * A postal code resolves to its city (PLZ_TO_CITY) and then to this centroid.
+ * Cities missing here simply fall back to manual coordinate entry.
+ */
+export const CITY_TO_GEO: Record<string, GeoPoint> = {
+  // Ingolstadt region (primary target area)
+  Ingolstadt: { lat: 48.7665, lng: 11.4258 },
+  Reichertshofen: { lat: 48.6589, lng: 11.4636 },
+  "Pfaffenhofen an der Ilm": { lat: 48.5314, lng: 11.5113 },
+  Manching: { lat: 48.7142, lng: 11.4936 },
+  Gaimersheim: { lat: 48.805, lng: 11.3653 },
+  Kösching: { lat: 48.8108, lng: 11.5006 },
+  Großmehring: { lat: 48.7667, lng: 11.5333 },
+  Lenting: { lat: 48.82, lng: 11.4636 },
+  Eichstätt: { lat: 48.891, lng: 11.185 },
+  Vohburg: { lat: 48.768, lng: 11.616 },
+  Wolnzach: { lat: 48.6019, lng: 11.6244 },
+  // Major German cities
+  Berlin: { lat: 52.52, lng: 13.405 },
+  Hamburg: { lat: 53.5511, lng: 9.9937 },
+  München: { lat: 48.1351, lng: 11.582 },
+  Köln: { lat: 50.9375, lng: 6.9603 },
+  "Frankfurt am Main": { lat: 50.1109, lng: 8.6821 },
+  Stuttgart: { lat: 48.7758, lng: 9.1829 },
+  Düsseldorf: { lat: 51.2277, lng: 6.7735 },
+  Dortmund: { lat: 51.5136, lng: 7.4653 },
+  Essen: { lat: 51.4556, lng: 7.0116 },
+  Bremen: { lat: 53.0793, lng: 8.8017 },
+  Bremerhaven: { lat: 53.5396, lng: 8.5809 },
+  Cuxhaven: { lat: 53.8588, lng: 8.69 },
+  Hannover: { lat: 52.3759, lng: 9.732 },
+  Braunschweig: { lat: 52.2689, lng: 10.5268 },
+  Wolfsburg: { lat: 52.4227, lng: 10.7865 },
+  Magdeburg: { lat: 52.1205, lng: 11.6276 },
+  Leipzig: { lat: 51.3397, lng: 12.3731 },
+  Dresden: { lat: 51.0504, lng: 13.7373 },
+  Nürnberg: { lat: 49.4521, lng: 11.0767 },
+  Augsburg: { lat: 48.3705, lng: 10.8978 },
+  Potsdam: { lat: 52.3906, lng: 13.0645 },
+  "Offenbach am Main": { lat: 50.0955, lng: 8.7761 },
+  Freising: { lat: 48.4028, lng: 11.7411 },
+  Erding: { lat: 48.3064, lng: 11.9076 },
+  Dachau: { lat: 48.2603, lng: 11.4342 },
+  Garching: { lat: 48.2489, lng: 11.651 },
+  Unterschleißheim: { lat: 48.2807, lng: 11.5763 },
+};
+
+/** Resolve the geo center for a city name. */
+export function geoFromCity(city: string): GeoPoint | null {
+  return CITY_TO_GEO[city] ?? null;
+}
+
+/** Resolve the geo center for a postal code via its city. */
+export function geoFromPlz(plz: string): GeoPoint | null {
+  return geoFromCity(cityFromPlz(plz));
 }
