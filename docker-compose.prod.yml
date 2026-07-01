@@ -221,6 +221,10 @@ services:
   watchtower:
     image: containrrr/watchtower:1.7.1
     command: ["--label-enable", "--cleanup", "--interval", "60"]
+    environment:
+      # The host Docker daemon requires API >= 1.40; pin the client version so
+      # Watchtower negotiates a supported version instead of crash-looping.
+      DOCKER_API_VERSION: "1.41"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
