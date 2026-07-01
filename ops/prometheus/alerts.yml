@@ -1,0 +1,50 @@
+# Prometheus alert rules — source scraping health (§15.3)
+# Surfaces broken/blocked scraping sources so they don't fail silently.
+groups:
+  - name: source_health
+    rules:
+      - alert: SourceCollectErrors
+        expr: increase(suchewohnung_source_run_errors_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Collect errors for source {{ $labels.source }}"
+          description: >-
+            Source {{ $labels.source }} has recorded collect run errors in the
+            last 15 minutes. The scraper may be partially broken or blocked.
+
+      - alert: SourceStalled
+        expr: time() - suchewohnung_source_last_success_timestamp_seconds > 900
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Source {{ $labels.source }} has not succeeded in >15m"
+          description: >-
+            No successful collect run for source {{ $labels.source }} in over 15
+            minutes. The source is likely broken, blocked, or not scheduled.
+
+      - alert: SourceNoNewListings
+        expr: increase(suchewohnung_source_items_new_total[1h]) == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Source {{ $labels.source }} produced 0 new listings"
+          description: >-
+            Source {{ $labels.source }} has produced no new listings for the
+            last hour of collect cycles. This can indicate a silently broken
+            scraper or an upstream layout change.
+
+      - alert: SourceScrapeDown
+        expr: up{job="worker-collect"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "worker-collect metrics endpoint is down"
+          description: >-
+            Prometheus cannot scrape the worker-collect /metrics endpoint. The
+            collect worker may be crashed or unreachable, so no source runs are
+            being recorded.

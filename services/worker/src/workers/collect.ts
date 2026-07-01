@@ -1,6 +1,7 @@
 import { Worker, Queue } from "bullmq";
 import { prisma } from "../prisma.js";
 import { createRedisConnection } from "../redis.js";
+import { recordSourceRunOutcome, startMetricsServer } from "../metrics.js";
 import {
   BOOLEAN_ATTRIBUTES,
   createDefaultConnectorRegistry,
@@ -1037,6 +1038,7 @@ async function finishRun(
   runId: string,
   status: "success" | "partial" | "failed",
   metrics: RunMetrics,
+  sourceSlug: string,
 ): Promise<void> {
   await prismaClient.sourceRun.update({
     where: { id: runId },
@@ -1049,6 +1051,22 @@ async function finishRun(
       finishedAt: new Date(),
     },
   });
+
+  // Never let a metrics failure bubble into the job. Best-effort observability.
+  try {
+    recordSourceRunOutcome({
+      source: sourceSlug,
+      status,
+      errors: metrics.errors,
+      itemsNew: metrics.newItems,
+    });
+  } catch (err) {
+    console.error(
+      `[collect] ${sourceSlug}: failed to record run metrics: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
 }
 
 export async function runCollectJob(
@@ -1212,10 +1230,11 @@ export async function runCollectJob(
       run.id,
       metrics.errors > 0 ? "partial" : "success",
       metrics,
+      sourceSlug,
     );
   } catch (err) {
     metrics.errors++;
-    await finishRun(deps.prisma, run.id, "failed", metrics);
+    await finishRun(deps.prisma, run.id, "failed", metrics, sourceSlug);
     throw err;
   } finally {
     abortController.abort();
@@ -1277,5 +1296,6 @@ export function startCollectWorker(): Worker {
 }
 
 if (require.main === module) {
+  startMetricsServer();
   startCollectWorker();
 }

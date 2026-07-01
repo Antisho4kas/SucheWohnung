@@ -18,12 +18,15 @@ const prismaMock = vi.hoisted(() => ({
 }));
 
 const notifyQueueAddMock = vi.hoisted(() => vi.fn());
+const autoReplyQueueAddMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../prisma.js", () => ({ prisma: prismaMock }));
 vi.mock("../redis.js", () => ({ createRedisConnection: vi.fn(() => ({})) }));
 vi.mock("bullmq", () => ({
-  Queue: vi.fn(function () {
-    return { add: notifyQueueAddMock };
+  Queue: vi.fn(function (name: string) {
+    return {
+      add: name === "auto-reply" ? autoReplyQueueAddMock : notifyQueueAddMock,
+    };
   }),
   Worker: vi.fn(function () {
     return { on: vi.fn() };
@@ -89,10 +92,13 @@ function profile(
   id: string,
   filters: Array<{ key: string; operator: string; value: unknown }>,
   notify = true,
+  autoReply?: { enabled?: boolean; text?: string | null },
 ) {
   return {
     id,
     notify,
+    autoReplyEnabled: autoReply?.enabled ?? false,
+    autoReplyText: autoReply?.text ?? null,
     filters: filters.map((filter) => ({
       operator: filter.operator,
       value: filter.value,
@@ -420,5 +426,146 @@ describe("match worker correctness", () => {
       expect.stringContaining("has no persisted geo"),
     );
     warn.mockRestore();
+  });
+
+  it("enqueues an auto-reply job for a matched profile with auto-reply enabled", async () => {
+    prismaMock.searchProfile.findMany.mockResolvedValue([
+      profile(
+        "profile-auto",
+        [{ key: "city", operator: "eq", value: "Berlin" }],
+        true,
+        { enabled: true, text: "Hallo, ist die Wohnung noch verfügbar?" },
+      ),
+    ]);
+
+    await runJob();
+
+    expect(notifyQueueAddMock).toHaveBeenCalledTimes(1);
+    expect(autoReplyQueueAddMock).toHaveBeenCalledTimes(1);
+    expect(autoReplyQueueAddMock).toHaveBeenCalledWith(
+      "auto-reply",
+      { matchId: "match-profile-auto", event: "created" },
+      expect.objectContaining({ jobId: "auto-reply-match-profile-auto" }),
+    );
+  });
+
+  it("enqueues an auto-reply job even when notify is disabled", async () => {
+    prismaMock.searchProfile.findMany.mockResolvedValue([
+      profile(
+        "profile-auto-muted",
+        [{ key: "city", operator: "eq", value: "Berlin" }],
+        false,
+        { enabled: true, text: "Interessiert!" },
+      ),
+    ]);
+
+    await runJob();
+
+    expect(notifyQueueAddMock).not.toHaveBeenCalled();
+    expect(autoReplyQueueAddMock).toHaveBeenCalledTimes(1);
+    expect(autoReplyQueueAddMock).toHaveBeenCalledWith(
+      "auto-reply",
+      { matchId: "match-profile-auto-muted", event: "created" },
+      expect.objectContaining({ jobId: "auto-reply-match-profile-auto-muted" }),
+    );
+  });
+
+  it("enqueues a versioned auto-reply job for changed events", async () => {
+    prismaMock.searchProfile.findMany.mockResolvedValue([
+      profile("profile-auto", [{ key: "price", operator: "lte", value: 1200 }], true, {
+        enabled: true,
+        text: "Hallo!",
+      }),
+    ]);
+
+    await runChangedJob();
+
+    expect(autoReplyQueueAddMock).toHaveBeenCalledWith(
+      "auto-reply",
+      {
+        matchId: "match-profile-auto",
+        event: "changed",
+        changeVersion: "2026-06-02T11:59:00.000Z",
+      },
+      expect.objectContaining({
+        jobId: "auto-reply-match-profile-auto-2026-06-02T11-59-00-000Z",
+      }),
+    );
+  });
+
+  it("does not enqueue an auto-reply job when auto-reply is disabled", async () => {
+    prismaMock.searchProfile.findMany.mockResolvedValue([
+      profile(
+        "profile-auto-off",
+        [{ key: "city", operator: "eq", value: "Berlin" }],
+        true,
+        { enabled: false, text: "Won't send" },
+      ),
+    ]);
+
+    await runJob();
+
+    expect(prismaMock.match.create).toHaveBeenCalledTimes(1);
+    expect(autoReplyQueueAddMock).not.toHaveBeenCalled();
+  });
+
+  it("does not enqueue an auto-reply job when auto-reply text is empty", async () => {
+    prismaMock.searchProfile.findMany.mockResolvedValue([
+      profile(
+        "profile-auto-empty",
+        [{ key: "city", operator: "eq", value: "Berlin" }],
+        true,
+        { enabled: true, text: "   " },
+      ),
+    ]);
+
+    await runJob();
+
+    expect(prismaMock.match.create).toHaveBeenCalledTimes(1);
+    expect(autoReplyQueueAddMock).not.toHaveBeenCalled();
+  });
+
+  it("enqueues an auto-reply job on the duplicate path for a pending match", async () => {
+    prismaMock.searchProfile.findMany.mockResolvedValue([
+      profile(
+        "profile-auto-dup",
+        [{ key: "city", operator: "eq", value: "Berlin" }],
+        true,
+        { enabled: true, text: "Immer noch interessiert" },
+      ),
+    ]);
+    prismaMock.match.create.mockRejectedValueOnce({ code: "P2002" });
+    prismaMock.match.findUnique.mockResolvedValueOnce({
+      id: "match-profile-auto-dup",
+      state: "pending",
+    });
+
+    await runJob();
+
+    expect(autoReplyQueueAddMock).toHaveBeenCalledWith(
+      "auto-reply",
+      { matchId: "match-profile-auto-dup", event: "created" },
+      expect.objectContaining({ jobId: "auto-reply-match-profile-auto-dup" }),
+    );
+  });
+
+  it("does not re-enqueue an auto-reply job on the duplicate path for an already-notified match", async () => {
+    prismaMock.searchProfile.findMany.mockResolvedValue([
+      profile(
+        "profile-auto-dup",
+        [{ key: "city", operator: "eq", value: "Berlin" }],
+        true,
+        { enabled: true, text: "Immer noch interessiert" },
+      ),
+    ]);
+    prismaMock.match.create.mockRejectedValueOnce({ code: "P2002" });
+    prismaMock.match.findUnique.mockResolvedValueOnce({
+      id: "match-profile-auto-dup",
+      state: "notified",
+    });
+
+    await runJob();
+
+    expect(autoReplyQueueAddMock).not.toHaveBeenCalled();
   });
 });

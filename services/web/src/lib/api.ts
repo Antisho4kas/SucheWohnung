@@ -207,6 +207,8 @@ export interface SearchProfile {
   name: string;
   isActive: boolean;
   notify: boolean;
+  auto_reply_enabled: boolean;
+  auto_reply_text: string | null;
   criteria: Record<string, unknown>;
   attrs: Record<string, unknown>;
   filterValues: ProfileFilterFormValues;
@@ -259,6 +261,8 @@ export interface FilterInput {
 export interface CreateProfilePayload extends ProfileFilterFormValues {
   name: string;
   notify?: boolean;
+  auto_reply_enabled?: boolean;
+  auto_reply_text?: string | null;
   filters?: FilterInput[];
   filterDefinitions?: FilterDefinition[];
   filter_definitions?: FilterDefinition[];
@@ -532,6 +536,8 @@ function hasProfileFilterInput(payload: UpdateProfilePayload): boolean {
       ![
         "name",
         "notify",
+        "auto_reply_enabled",
+        "auto_reply_text",
         "is_active",
         "filters",
         "filterDefinitions",
@@ -547,6 +553,15 @@ function buildProfileBody(
   const body: Record<string, unknown> = {};
   if (payload.name !== undefined) body.name = payload.name;
   if (payload.notify !== undefined) body.notify = payload.notify;
+  if (payload.auto_reply_enabled !== undefined) {
+    const enabled = payload.auto_reply_enabled;
+    const text =
+      typeof payload.auto_reply_text === "string"
+        ? payload.auto_reply_text.trim()
+        : "";
+    body.auto_reply_enabled = enabled;
+    body.auto_reply_text = enabled && text !== "" ? text : null;
+  }
   if (payload.is_active !== undefined) body.is_active = payload.is_active;
   if (Array.isArray(payload.filters)) {
     body.filters = payload.filters;
@@ -615,6 +630,11 @@ export function mapProfile(raw: Record<string, unknown>): SearchProfile {
     name: String(raw.name ?? ""),
     isActive,
     notify: toBool(raw.notify),
+    auto_reply_enabled: toBool(raw.auto_reply_enabled ?? raw.autoReplyEnabled),
+    auto_reply_text:
+      raw.auto_reply_text == null && raw.autoReplyText == null
+        ? null
+        : String(raw.auto_reply_text ?? raw.autoReplyText),
     criteria,
     attrs,
     filterValues: mapCriteriaValues(criteria),

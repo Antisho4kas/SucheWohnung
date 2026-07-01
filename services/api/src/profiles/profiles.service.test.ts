@@ -137,6 +137,60 @@ describe("ProfilesService filter validation", () => {
     );
   });
 
+  it("persists auto-reply fields on create and update", async () => {
+    const prisma = createPrismaMock();
+    const service = new ProfilesService(prisma as never);
+
+    await service.create("user-1", {
+      name: "With auto-reply",
+      filters: [{ key: "price", operator: "lte", value: 1300 }],
+      auto_reply_enabled: true,
+      auto_reply_text: "Hallo, ist die Wohnung noch verfügbar?",
+    });
+
+    expect(prisma.searchProfile.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          autoReplyEnabled: true,
+          autoReplyText: "Hallo, ist die Wohnung noch verfügbar?",
+        }),
+      }),
+    );
+
+    await service.update("user-1", "profile-1", {
+      auto_reply_enabled: false,
+      auto_reply_text: null,
+    });
+
+    expect(prisma.searchProfile.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          autoReplyEnabled: false,
+          autoReplyText: null,
+        }),
+      }),
+    );
+  });
+
+  it("defaults auto-reply fields to disabled/null when omitted on create", async () => {
+    const prisma = createPrismaMock();
+    const service = new ProfilesService(prisma as never);
+
+    await service.create("user-1", {
+      name: "No auto-reply",
+      filters: [{ key: "price", operator: "lte", value: 1300 }],
+    });
+
+    expect(prisma.searchProfile.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          autoReplyEnabled: false,
+          autoReplyText: null,
+        }),
+      }),
+    );
+  });
+
   it("rejects invalid create filters before user limit checks or persistence", async () => {
     const prisma = createPrismaMock();
     const service = new ProfilesService(prisma as never);

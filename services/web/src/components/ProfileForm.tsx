@@ -12,9 +12,11 @@ import {
 import { useLocale } from "../lib/i18n";
 import { cityFromPlz, geoFromPlz } from "../lib/plz-data";
 
-interface ProfileFormSubmitPayload {
+export interface ProfileFormSubmitPayload {
   name: string;
   notify: boolean;
+  autoReplyEnabled: boolean;
+  autoReplyText: string;
   filters: FilterInput[];
   values: ProfileFilterFormValues;
 }
@@ -23,6 +25,8 @@ interface ProfileFormProps {
   filterDefinitions: FilterDefinition[];
   initialName?: string;
   initialNotify?: boolean;
+  initialAutoReplyEnabled?: boolean;
+  initialAutoReplyText?: string;
   initialValues?: ProfileFilterFormValues;
   loading?: boolean;
   submitText?: string;
@@ -79,6 +83,8 @@ export function ProfileForm({
   filterDefinitions,
   initialName = "",
   initialNotify = true,
+  initialAutoReplyEnabled = false,
+  initialAutoReplyText = "",
   initialValues = {},
   loading = false,
   submitText,
@@ -87,6 +93,10 @@ export function ProfileForm({
   const { locale, t } = useLocale();
   const [name, setName] = useState(initialName);
   const [notify, setNotify] = useState(initialNotify);
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(
+    initialAutoReplyEnabled,
+  );
+  const [autoReplyText, setAutoReplyText] = useState(initialAutoReplyText);
   const [values, setValues] = useState<ProfileFilterFormValues>(initialValues);
   const [error, setError] = useState("");
 
@@ -166,7 +176,14 @@ export function ProfileForm({
         setError(t("profile.filtersRequired"));
         return;
       }
-      await onSubmit({ name: name.trim(), notify, filters, values });
+      await onSubmit({
+        name: name.trim(),
+        notify,
+        autoReplyEnabled,
+        autoReplyText,
+        filters,
+        values,
+      });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : t("profile.validationError"),
@@ -426,6 +443,38 @@ export function ProfileForm({
             <span className="toggle-slider" />
           </span>
         </label>
+      </div>
+
+      <div className="card space-y-4">
+        <label className="flex items-center justify-between cursor-pointer py-2.5 px-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            {t("profile.autoReply")}
+          </span>
+          <span className="toggle-switch">
+            <input
+              type="checkbox"
+              checked={autoReplyEnabled}
+              onChange={(event) => setAutoReplyEnabled(event.target.checked)}
+            />
+            <span className="toggle-slider" />
+          </span>
+        </label>
+        {autoReplyEnabled && (
+          <div className="form-group">
+            <label htmlFor="auto-reply-text">{t("profile.autoReply")}</label>
+            <textarea
+              id="auto-reply-text"
+              value={autoReplyText}
+              onChange={(event) => setAutoReplyText(event.target.value)}
+              placeholder={t("profile.autoReplyPlaceholder")}
+              maxLength={1000}
+              rows={4}
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {t("profile.autoReplyHint")}
+            </p>
+          </div>
+        )}
       </div>
 
       {error && (

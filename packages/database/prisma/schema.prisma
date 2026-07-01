@@ -212,14 +212,16 @@ model FilterDefinition {
 }
 
 model SearchProfile {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  name      String
-  isActive  Boolean  @default(true) @map("is_active")
-  notify    Boolean  @default(true)
-  criteria  Json     @default("{}")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  name             String
+  isActive         Boolean  @default(true) @map("is_active")
+  notify           Boolean  @default(true)
+  autoReplyEnabled Boolean  @default(false) @map("auto_reply_enabled")
+  autoReplyText    String?  @map("auto_reply_text")
+  criteria         Json     @default("{}")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   filters ProfileFilter[]
@@ -252,6 +254,7 @@ model Match {
   profile       SearchProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   listing       Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
   notifications Notification[]
+  sellerReplies SellerReply[]
 
   @@unique([profileId, listingId], name: "uq_profile_listing")
   @@index([profileId, matchedAt])
@@ -288,6 +291,27 @@ model Notification {
 
   @@index([status, createdAt])
   @@map("notifications")
+}
+
+// Auto-reply seam (Part 1): records the intended seller reply for a match when
+// a profile has auto-reply enabled. The actual platform send is Part 2 (blocked
+// on a connector capability), so recorded rows carry status "skipped_no_channel"
+// until a send channel exists. Modeled on Notification.
+model SellerReply {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matchId   String    @map("match_id") @db.Uuid
+  channel   String    @default("kleinanzeigen")
+  status    String    @default("pending")
+  body      String
+  dedupeKey String    @unique @map("dedupe_key")
+  error     String?
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@map("seller_replies")
 }
 
 model SourceRun {

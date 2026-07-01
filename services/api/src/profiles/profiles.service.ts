@@ -77,6 +77,8 @@ export class ProfilesService {
         userId,
         name: dto.name,
         notify: dto.notify ?? true,
+        autoReplyEnabled: dto.auto_reply_enabled ?? false,
+        autoReplyText: dto.auto_reply_text ?? null,
         criteria: criteria as object,
         filters: {
           create: validated.filters.map((f) => ({
@@ -118,6 +120,10 @@ export class ProfilesService {
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.notify !== undefined) data.notify = dto.notify;
     if (dto.is_active !== undefined) data.isActive = dto.is_active;
+    if (dto.auto_reply_enabled !== undefined)
+      data.autoReplyEnabled = dto.auto_reply_enabled;
+    if (dto.auto_reply_text !== undefined)
+      data.autoReplyText = dto.auto_reply_text;
 
     if (dto.filters) {
       data.criteria = buildCriteria(validated!.filters) as object;

@@ -115,4 +115,49 @@ describe("ProfileForm", () => {
 
     expect(html).not.toContain("profile.autoCity");
   });
+
+  it("renders the auto-reply textarea with prepared text when enabled", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ProfileForm, {
+        filterDefinitions: [
+          normalizeFilterDefinition({
+            key: "price",
+            label: { de: "Preis" },
+            dataType: "number",
+            operatorSet: ["gte", "lte"],
+          }),
+        ],
+        initialAutoReplyEnabled: true,
+        initialAutoReplyText: "Hallo, ist die Wohnung noch verfügbar?",
+        onSubmit: vi.fn(),
+      }),
+    );
+
+    expect(html).toContain("profile.autoReply");
+    expect(html).toContain("<textarea");
+    expect(html).toContain("Hallo, ist die Wohnung noch verfügbar?");
+    expect(html).toContain("profile.autoReplyHint");
+  });
+
+  it("hides the auto-reply textarea when disabled (default)", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ProfileForm, {
+        filterDefinitions: [
+          normalizeFilterDefinition({
+            key: "price",
+            label: { de: "Preis" },
+            dataType: "number",
+            operatorSet: ["gte", "lte"],
+          }),
+        ],
+        onSubmit: vi.fn(),
+      }),
+    );
+
+    // The toggle label is always present, but the textarea + hint only render
+    // when auto-reply is enabled.
+    expect(html).toContain("profile.autoReply");
+    expect(html).not.toContain("<textarea");
+    expect(html).not.toContain("profile.autoReplyHint");
+  });
 });

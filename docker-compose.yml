@@ -97,6 +97,7 @@ services:
     command: ["node", "dist/workers/collect.js"]
     environment:
       <<: *app-env
+      WORKER_METRICS_PORT: "9101"
     depends_on:
       postgres:
         condition: service_healthy
@@ -127,6 +128,22 @@ services:
       context: .
       dockerfile: services/worker/Dockerfile
     command: ["node", "dist/workers/notify.js"]
+    environment:
+      <<: *app-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+
+  worker-auto-reply:
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+    command: ["node", "dist/workers/auto-reply.js"]
     environment:
       <<: *app-env
     depends_on:
@@ -207,6 +224,29 @@ services:
     depends_on:
       - web
       - api
+    restart: unless-stopped
+
+  # Observability: Prometheus scrapes api + worker-collect and evaluates the
+  # source-health alert rules; Alertmanager routes any firing alerts (§15.3).
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      - alertmanager
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+    volumes:
+      - ./ops/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     restart: unless-stopped
 
 volumes:

@@ -484,6 +484,81 @@ describe("web API contract adapter", () => {
     });
   });
 
+  it("serializes auto-reply fields on create and trims the prepared text", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        data: {
+          id: "profile-1",
+          name: "Berlin",
+          is_active: true,
+          notify: true,
+          criteria: {},
+        },
+      }),
+    );
+
+    await api.createProfile({
+      name: "Berlin",
+      city: "Berlin",
+      auto_reply_enabled: true,
+      auto_reply_text: "  Hallo, ist die Wohnung noch verfügbar?  ",
+      filterDefinitions: definitions,
+    });
+
+    const body = JSON.parse(String(fetchInitAt(fetchMock, 0).body));
+    expect(body.auto_reply_enabled).toBe(true);
+    expect(body.auto_reply_text).toBe("Hallo, ist die Wohnung noch verfügbar?");
+  });
+
+  it("nulls the auto-reply text when auto-reply is disabled", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        data: {
+          id: "profile-1",
+          name: "Berlin",
+          is_active: true,
+          notify: true,
+          criteria: {},
+        },
+      }),
+    );
+
+    await api.updateProfile("profile-1", {
+      auto_reply_enabled: false,
+      auto_reply_text: "ignored when disabled",
+    });
+
+    const body = JSON.parse(String(fetchInitAt(fetchMock, 0).body));
+    expect(body.auto_reply_enabled).toBe(false);
+    expect(body.auto_reply_text).toBeNull();
+  });
+
+  it("maps auto-reply fields from the backend profile response", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        data: [
+          {
+            id: "profile-1",
+            name: "Berlin",
+            is_active: true,
+            notify: true,
+            auto_reply_enabled: true,
+            auto_reply_text: "Hallo, ist die Wohnung noch verfügbar?",
+            criteria: {},
+          },
+        ],
+      }),
+    );
+
+    await expect(api.getProfiles()).resolves.toEqual([
+      expect.objectContaining({
+        id: "profile-1",
+        auto_reply_enabled: true,
+        auto_reply_text: "Hallo, ist die Wohnung noch verfügbar?",
+      }),
+    ]);
+  });
+
   it("does not send an empty filters array for partial profile status updates", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse({

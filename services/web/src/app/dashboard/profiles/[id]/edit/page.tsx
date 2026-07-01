@@ -57,6 +57,8 @@ export default function EditProfilePage() {
   const handleSubmit = async (payload: {
     name: string;
     notify: boolean;
+    autoReplyEnabled: boolean;
+    autoReplyText: string;
     filters: FilterInput[];
     values: ProfileFilterFormValues;
   }) => {
@@ -66,6 +68,8 @@ export default function EditProfilePage() {
       await api.updateProfile(id, {
         name: payload.name,
         notify: payload.notify,
+        auto_reply_enabled: payload.autoReplyEnabled,
+        auto_reply_text: payload.autoReplyText,
         filters: payload.filters,
       });
       router.push("/dashboard");
@@ -122,6 +126,8 @@ export default function EditProfilePage() {
           filterDefinitions={filterDefinitions}
           initialName={profile.name}
           initialNotify={profile.notify}
+          initialAutoReplyEnabled={profile.auto_reply_enabled}
+          initialAutoReplyText={profile.auto_reply_text ?? ""}
           initialValues={profile.filterValues}
           loading={saving}
           onSubmit={handleSubmit}

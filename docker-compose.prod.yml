@@ -1,6 +1,14 @@
 # Production Docker Compose — pulls pre-built images from GHCR
 # Usage: docker compose -f docker-compose.prod.yml up -d
 
+# Watchtower auto-updates only the containers carrying this label, so it swaps
+# our app images (api/web/bot/workers/scheduler) on new :latest pushes but never
+# touches stateful infra (postgres/redis/nginx/prometheus/kleinanzeigen-api).
+# NOTE: Watchtower refreshes IMAGES only — it does NOT run DB migrations. A
+# schema change still needs a `prisma migrate deploy` step (manual or via CI).
+x-watchtower-labels: &watchtower-labels
+  com.centurylinklabs.watchtower.enable: "true"
+
 services:
   postgres:
     image: postgis/postgis:16-3.4
@@ -31,6 +39,7 @@ services:
 
   api:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/api:latest
+    labels: *watchtower-labels
     env_file: .env
     environment:
       NODE_ENV: production
@@ -48,11 +57,13 @@ services:
   worker-collect:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/worker:latest
     command: ["node", "dist/workers/collect.js"]
+    labels: *watchtower-labels
     env_file: .env
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://app:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/suchewohnung?schema=public
       REDIS_URL: redis://redis:6379
+      WORKER_METRICS_PORT: "9101"
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,6 +74,7 @@ services:
   worker-match:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/worker:latest
     command: ["node", "dist/workers/match.js"]
+    labels: *watchtower-labels
     env_file: .env
     environment:
       NODE_ENV: production
@@ -78,6 +90,26 @@ services:
   worker-notify:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/worker:latest
     command: ["node", "dist/workers/notify.js"]
+    labels: *watchtower-labels
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://app:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/suchewohnung?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Processes the "auto-reply" queue (Auto-Reply Part 1): records the intended
+  # seller reply per match (status skipped_no_channel until Part 2 adds a send
+  # channel). Mirrors worker-notify.
+  worker-auto-reply:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/worker:latest
+    command: ["node", "dist/workers/auto-reply.js"]
+    labels: *watchtower-labels
     env_file: .env
     environment:
       NODE_ENV: production
@@ -93,6 +125,7 @@ services:
   scheduler:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/worker:latest
     command: ["node", "dist/workers/scheduler.js"]
+    labels: *watchtower-labels
     env_file: .env
     environment:
       NODE_ENV: production
@@ -107,6 +140,7 @@ services:
 
   bot:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/bot:latest
+    labels: *watchtower-labels
     env_file: .env
     environment:
       NODE_ENV: production
@@ -121,6 +155,7 @@ services:
 
   web:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-antisho4kas/suchewohnung}/web:latest
+    labels: *watchtower-labels
     env_file: .env
     environment:
       NODE_ENV: production
@@ -154,6 +189,40 @@ services:
       context: "https://github.com/DanielWTE/ebay-kleinanzeigen-api.git#1129536bb10e4d1c3b06e295beac0fe3f36f2a7d"
     environment:
       HEADLESS: "true"
+    restart: unless-stopped
+
+  # Observability: Prometheus scrapes api + worker-collect and evaluates the
+  # source-health alert rules; Alertmanager routes any firing alerts (§15.3).
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      - alertmanager
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+    volumes:
+      - ./ops/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    restart: unless-stopped
+
+  # Continuous deploy: polls GHCR and auto-updates the labelled app containers
+  # to the newest :latest image (api/web/bot/workers/scheduler), then removes
+  # the stale image. Stateful infra is left untouched (no watchtower label).
+  # Images are public (public repo), so no registry credentials are required.
+  watchtower:
+    image: containrrr/watchtower:1.7.1
+    command: ["--label-enable", "--cleanup", "--interval", "60"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 
 volumes:

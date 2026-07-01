@@ -92,7 +92,13 @@ export const SEED_SOURCES: SeedSource[] = [
     name: "eBay Kleinanzeigen",
     integrationType: "scrape",
     isActive: true,
-    scheduleCron: "*/15 * * * *",
+    // Freshness matters for rentals ("first to reply wins"): poll every minute
+    // (cron's finest granularity ≈ 60s, low end of the 60–120s target). The
+    // scheduler's per-source lock + "skip if a collect job is already
+    // active/waiting" guard prevents overlapping runs from piling up, so a run
+    // that takes >60s simply defers the next tick instead of stacking load on
+    // the unofficial adapter. rateLimitRpm caps enqueues/min as a backstop.
+    scheduleCron: "* * * * *",
     rateLimitRpm: 10,
     config: withLifecycle(
       {

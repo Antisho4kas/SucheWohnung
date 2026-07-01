@@ -42,6 +42,8 @@ type MatchPrismaLike = {
 type SearchProfileRecord = {
   id: string;
   notify: boolean;
+  autoReplyEnabled: boolean;
+  autoReplyText: string | null;
   filters: Array<{
     operator: string;
     value: unknown;
@@ -62,6 +64,7 @@ type MatchEvent = "created" | "changed";
 export type MatchDeps = {
   prisma: MatchPrismaLike;
   notifyQueue: NotifyQueueLike;
+  autoReplyQueue: NotifyQueueLike;
 };
 
 function createDefaultDeps(): MatchDeps {
@@ -69,6 +72,7 @@ function createDefaultDeps(): MatchDeps {
   return {
     prisma: prisma as unknown as MatchPrismaLike,
     notifyQueue: new Queue("notify", { connection }),
+    autoReplyQueue: new Queue("auto-reply", { connection }),
   };
 }
 
@@ -201,6 +205,40 @@ async function enqueueNotify(args: {
   );
 }
 
+function wantsAutoReply(profile: SearchProfileRecord): boolean {
+  return (
+    profile.autoReplyEnabled === true &&
+    typeof profile.autoReplyText === "string" &&
+    profile.autoReplyText.trim().length > 0
+  );
+}
+
+async function enqueueAutoReply(args: {
+  autoReplyQueue: NotifyQueueLike;
+  matchId: string;
+  event: MatchEvent;
+  changeVersion?: string;
+}): Promise<void> {
+  if (args.event === "changed" && !args.changeVersion) {
+    throw new Error("changed auto-replies require changeVersion");
+  }
+  const jobId = args.changeVersion
+    ? `auto-reply-${args.matchId}-${safeJobIdPart(args.changeVersion)}`
+    : `auto-reply-${args.matchId}`;
+  await args.autoReplyQueue.add(
+    "auto-reply",
+    {
+      matchId: args.matchId,
+      event: args.event,
+      ...(args.changeVersion ? { changeVersion: args.changeVersion } : {}),
+    },
+    {
+      ...NOTIFY_JOB_OPTIONS,
+      jobId,
+    },
+  );
+}
+
 async function findExistingMatch(
   deps: MatchDeps,
   profileId: string,
@@ -311,6 +349,14 @@ export async function runMatchJob(
             changeVersion,
           });
         }
+        if (wantsAutoReply(profile)) {
+          await enqueueAutoReply({
+            autoReplyQueue: deps.autoReplyQueue,
+            matchId: match.id,
+            event,
+            changeVersion,
+          });
+        }
       } catch (err) {
         if ((err as any)?.code === "P2002") {
           console.log(
@@ -333,6 +379,17 @@ export async function runMatchJob(
               changeVersion,
             });
           }
+          if (
+            wantsAutoReply(profile) &&
+            (event === "changed" || existing.state === "pending")
+          ) {
+            await enqueueAutoReply({
+              autoReplyQueue: deps.autoReplyQueue,
+              matchId: existing.id,
+              event,
+              changeVersion,
+            });
+          }
         } else {
           throw err;
         }
@@ -348,6 +405,7 @@ if (process.env.VITEST !== "true") {
   const deps: MatchDeps = {
     prisma: prisma as unknown as MatchPrismaLike,
     notifyQueue: new Queue("notify", { connection }),
+    autoReplyQueue: new Queue("auto-reply", { connection }),
   };
   const worker = new Worker("match", async (job) => runMatchJob(job, deps), {
     connection,

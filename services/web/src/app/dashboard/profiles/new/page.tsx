@@ -34,6 +34,8 @@ export default function NewProfilePage() {
   const handleSubmit = async (payload: {
     name: string;
     notify: boolean;
+    autoReplyEnabled: boolean;
+    autoReplyText: string;
     filters: { key: string; operator: string; value?: unknown }[];
   }) => {
     setError("");
@@ -42,6 +44,8 @@ export default function NewProfilePage() {
       await api.createProfile({
         name: payload.name,
         notify: payload.notify,
+        auto_reply_enabled: payload.autoReplyEnabled,
+        auto_reply_text: payload.autoReplyText,
         filters: payload.filters,
       });
       router.push("/dashboard");

@@ -112,6 +112,8 @@ CREATE TABLE search_profiles (
     name        TEXT NOT NULL,
     is_active   BOOLEAN NOT NULL DEFAULT true,
     notify      BOOLEAN NOT NULL DEFAULT true,
+    auto_reply_enabled BOOLEAN NOT NULL DEFAULT false,
+    auto_reply_text    TEXT,
     criteria    JSONB NOT NULL DEFAULT '{}',  -- денормализованный снимок
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -150,6 +152,21 @@ CREATE TABLE notifications (
     subscription_id UUID NOT NULL REFERENCES telegram_subscriptions(id),
     channel         TEXT NOT NULL DEFAULT 'telegram',
     status          TEXT NOT NULL DEFAULT 'queued',
+    dedupe_key      TEXT NOT NULL UNIQUE,
+    error           TEXT,
+    sent_at         TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Auto-reply seam (Part 1): recorded intended seller reply per match. Platform
+-- send is Part 2 (blocked on a connector capability); rows carry status
+-- 'skipped_no_channel' until a send channel exists.
+CREATE TABLE seller_replies (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    match_id        UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    channel         TEXT NOT NULL DEFAULT 'kleinanzeigen',
+    status          TEXT NOT NULL DEFAULT 'pending',
+    body            TEXT NOT NULL,
     dedupe_key      TEXT NOT NULL UNIQUE,
     error           TEXT,
     sent_at         TIMESTAMPTZ,
@@ -215,6 +232,7 @@ CREATE INDEX idx_profiles_active    ON search_profiles (is_active) WHERE is_acti
 CREATE INDEX idx_profiles_criteria  ON search_profiles USING GIN (criteria);
 -- Дедупликация уведомлений
 CREATE INDEX idx_notif_status       ON notifications (status, created_at);
+CREATE INDEX idx_seller_replies_status ON seller_replies (status, created_at);
 -- Операционные
 CREATE INDEX idx_source_runs_src    ON source_runs (source_id, started_at DESC);
 CREATE INDEX idx_history_listing    ON listing_history (listing_id, changed_at DESC);

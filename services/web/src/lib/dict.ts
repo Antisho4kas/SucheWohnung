@@ -136,6 +136,11 @@ const de = {
   "profile.parkingLabel": "Parkplatz / Garage",
   "profile.pets": "Haustiere erlaubt",
   "profile.notify": "Benachrichtigungen aktivieren",
+  "profile.autoReply": "Auto-Antwort",
+  "profile.autoReplyPlaceholder":
+    "Hallo, ist die Wohnung noch verfügbar? Ich würde sie gerne besichtigen.",
+  "profile.autoReplyHint":
+    "Hinterlegt eine fertige Nachricht, die für den Anbieter vorbereitet wird, sobald ein Treffer gefunden wird (noch kein automatischer Versand).",
   "profile.submit": "Profil speichern",
   "profile.submitting": "Wird gespeichert...",
   "profile.cancel": "Abbrechen",
@@ -350,6 +355,11 @@ const ru: DictShape = {
   "profile.parkingLabel": "Парковка / Гараж",
   "profile.pets": "Можно с животными",
   "profile.notify": "Уведомления включены",
+  "profile.autoReply": "Автоответ",
+  "profile.autoReplyPlaceholder":
+    "Здравствуйте, квартира ещё доступна? Хотел(а) бы посмотреть её.",
+  "profile.autoReplyHint":
+    "Подготовит готовое сообщение для продавца, как только найдётся подходящий вариант (пока без автоматической отправки).",
   "profile.submit": "Сохранить профиль",
   "profile.submitting": "Сохранение...",
   "profile.cancel": "Отмена",

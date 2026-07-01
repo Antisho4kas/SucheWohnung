@@ -3,6 +3,14 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+rule_files:
+  - "alerts.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
@@ -11,6 +19,11 @@ scrape_configs:
   - job_name: 'api'
     static_configs:
       - targets: ['api:9100']
+    metrics_path: '/metrics'
+
+  - job_name: 'worker-collect'
+    static_configs:
+      - targets: ['worker-collect:9101']
     metrics_path: '/metrics'
 
   - job_name: 'postgres-exporter'
