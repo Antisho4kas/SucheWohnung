@@ -103,6 +103,24 @@ function isPrismaUniqueError(error: unknown): boolean {
   );
 }
 
+/**
+ * Default seller-reply text for the notification's copyable block. Prefers
+ * DEFAULT_AUTOREPLY_TEXT_B64 (base64) because .env / env_file cannot carry the
+ * multi-line template verbatim; falls back to a plain DEFAULT_AUTOREPLY_TEXT.
+ */
+function resolveDefaultReplyText(): string | null {
+  const b64 = process.env.DEFAULT_AUTOREPLY_TEXT_B64?.trim();
+  if (b64) {
+    try {
+      const decoded = Buffer.from(b64, "base64").toString("utf8").trim();
+      if (decoded) return decoded;
+    } catch {
+      // fall through to plain text
+    }
+  }
+  return process.env.DEFAULT_AUTOREPLY_TEXT?.trim() || null;
+}
+
 function isLastAttempt(job: NotifyJob): boolean {
   const attempts = job.opts?.attempts ?? 1;
   const currentAttempt = (job.attemptsMade ?? 0) + 1;
@@ -311,9 +329,7 @@ async function deliverToSubscription(args: {
 
   try {
     const replyText =
-      args.match.profile.autoReplyText?.trim() ||
-      process.env.DEFAULT_AUTOREPLY_TEXT ||
-      null;
+      args.match.profile.autoReplyText?.trim() || resolveDefaultReplyText();
     await sendTelegramListing(
       args.deps.telegramApi,
       chatId,
