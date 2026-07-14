@@ -102,14 +102,13 @@ function toHttpUrl(value: unknown): string | undefined {
 
 export function renderTelegramNotification(
   listing: TelegramListingPayload,
-  replyText?: string | null,
 ): string {
   const listingUrl = toHttpUrl(listing.url);
   const link = listingUrl
     ? `🔗 <a href="${escapeTelegramHtml(listingUrl)}">Ссылка на объявление</a>`
     : "🔗 Ссылка на объявление недоступна";
 
-  const lines = [
+  return [
     "🏠 <b>Новая квартира найдена</b>",
     "",
     `📍 ${displayValue(listing.city, "")}`,
@@ -120,29 +119,13 @@ export function renderTelegramNotification(
     link,
     "",
     `Источник: ${displayValue(listing.source.name, "")}`,
-  ];
-
-  // Embed the seller reply as a <pre> block: Telegram renders it with a
-  // one-tap copy control and, unlike a copy_text button (256-char cap), has
-  // no such limit — so the full message (incl. phone/email) is copied intact.
-  // Sending stays a manual step, so the user's kleinanzeigen account is safe.
-  const reply = replyText?.trim();
-  if (reply) {
-    lines.push(
-      "",
-      "✍️ <b>Готовый текст ответа</b> (нажмите, чтобы скопировать):",
-      `<pre>${escapeTelegramHtml(reply)}</pre>`,
-    );
-  }
-
-  return lines.join("\n");
+  ].join("\n");
 }
 
 /**
  * Inline keyboard for a listing notification: a single "open listing" URL
- * button (one tap to the kleinanzeigen page with its contact form). The reply
- * text itself is embedded in the message body as a copyable <pre> block, not a
- * button, because copy_text buttons are capped at 256 chars.
+ * button (one tap to the kleinanzeigen page with its contact form). The user
+ * copies their own reply text manually.
  */
 export function buildListingReplyMarkup(args: {
   listingUrl: unknown;
@@ -156,9 +139,8 @@ export async function sendTelegramListing(
   api: TelegramApiLike,
   chatId: string,
   listing: TelegramListingPayload,
-  replyText?: string | null,
 ): Promise<void> {
-  const caption = renderTelegramNotification(listing, replyText);
+  const caption = renderTelegramNotification(listing);
   const replyMarkup = buildListingReplyMarkup({ listingUrl: listing.url });
   const image = listing.images
     ?.map((candidate) => toHttpUrl(candidate.url))

@@ -28,31 +28,22 @@ describe("buildListingReplyMarkup", () => {
   });
 });
 
-describe("renderTelegramNotification reply block", () => {
-  it("omits the reply block when no reply text is set", () => {
+describe("renderTelegramNotification", () => {
+  it("renders listing fields with a link and no embedded reply block", () => {
     const text = renderTelegramNotification(listing);
+    expect(text).toContain("Ingolstadt");
+    expect(text).toContain("Ссылка на объявление");
     expect(text).not.toContain("<pre>");
     expect(text).not.toContain("Готовый текст");
   });
 
-  it("embeds the full reply as a copyable <pre> block (no 256-char cap)", () => {
-    const reply =
-      "Guten Tag,\nmein Name ist Taras. " + "Sehr lange Nachricht ".repeat(30);
-    const text = renderTelegramNotification(listing, reply);
-    expect(text).toContain("<pre>");
-    // Full text preserved — not truncated to 256 chars.
-    expect(text.length).toBeGreaterThan(400);
-    expect(text).toContain("Готовый текст ответа");
-  });
-
-  it("HTML-escapes the reply so markup can't break the message", () => {
-    const text = renderTelegramNotification(listing, "A & B <tag> \"q\"");
-    expect(text).toContain("A &amp; B &lt;tag&gt; &quot;q&quot;");
-    expect(text).not.toContain("<tag>");
-  });
-
-  it("ignores whitespace-only reply text", () => {
-    const text = renderTelegramNotification(listing, "   ");
-    expect(text).not.toContain("<pre>");
+  it("escapes HTML in listing fields", () => {
+    const text = renderTelegramNotification({
+      ...listing,
+      city: "Ingolstadt <b>",
+      source: { name: "A & B" },
+    });
+    expect(text).toContain("Ingolstadt &lt;b&gt;");
+    expect(text).toContain("A &amp; B");
   });
 });

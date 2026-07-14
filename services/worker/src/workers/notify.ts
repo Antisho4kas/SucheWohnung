@@ -47,7 +47,6 @@ type MatchRecord = {
   profile: {
     id: string;
     userId: string;
-    autoReplyText?: string | null;
     user: { telegramSubscriptions: SubscriptionRecord[] };
   };
   listing: ListingRecord;
@@ -101,24 +100,6 @@ function isPrismaUniqueError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: unknown }).code === "P2002"
   );
-}
-
-/**
- * Default seller-reply text for the notification's copyable block. Prefers
- * DEFAULT_AUTOREPLY_TEXT_B64 (base64) because .env / env_file cannot carry the
- * multi-line template verbatim; falls back to a plain DEFAULT_AUTOREPLY_TEXT.
- */
-function resolveDefaultReplyText(): string | null {
-  const b64 = process.env.DEFAULT_AUTOREPLY_TEXT_B64?.trim();
-  if (b64) {
-    try {
-      const decoded = Buffer.from(b64, "base64").toString("utf8").trim();
-      if (decoded) return decoded;
-    } catch {
-      // fall through to plain text
-    }
-  }
-  return process.env.DEFAULT_AUTOREPLY_TEXT?.trim() || null;
 }
 
 function isLastAttempt(job: NotifyJob): boolean {
@@ -328,13 +309,10 @@ async function deliverToSubscription(args: {
   }
 
   try {
-    const replyText =
-      args.match.profile.autoReplyText?.trim() || resolveDefaultReplyText();
     await sendTelegramListing(
       args.deps.telegramApi,
       chatId,
       args.match.listing,
-      replyText,
     );
   } catch (err) {
     const classification = classifyTelegramError(err);
