@@ -176,6 +176,12 @@ services:
     depends_on:
       - web
       - api
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/nginx-health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # Self-hosted ebay-kleinanzeigen adapter (DanielWTE/ebay-kleinanzeigen-api).
