@@ -1,8 +1,6 @@
 import { createHash } from "node:crypto";
 
-type TelegramInlineButton =
-  | { text: string; url: string }
-  | { text: string; copy_text: { text: string } };
+type TelegramInlineButton = { text: string; url: string };
 
 type TelegramReplyMarkup = {
   inline_keyboard: TelegramInlineButton[][];
@@ -13,9 +11,6 @@ type TelegramSendOptions = {
   caption?: string;
   reply_markup?: TelegramReplyMarkup;
 };
-
-// Telegram hard limit for a copy_text button payload.
-const COPY_TEXT_MAX_LEN = 256;
 
 export type TelegramApiLike = {
   sendMessage(
@@ -107,13 +102,14 @@ function toHttpUrl(value: unknown): string | undefined {
 
 export function renderTelegramNotification(
   listing: TelegramListingPayload,
+  replyText?: string | null,
 ): string {
   const listingUrl = toHttpUrl(listing.url);
   const link = listingUrl
     ? `🔗 <a href="${escapeTelegramHtml(listingUrl)}">Ссылка на объявление</a>`
     : "🔗 Ссылка на объявление недоступна";
 
-  return [
+  const lines = [
     "🏠 <b>Новая квартира найдена</b>",
     "",
     `📍 ${displayValue(listing.city, "")}`,
@@ -124,38 +120,36 @@ export function renderTelegramNotification(
     link,
     "",
     `Источник: ${displayValue(listing.source.name, "")}`,
-  ].join("\n");
+  ];
+
+  // Embed the seller reply as a <pre> block: Telegram renders it with a
+  // one-tap copy control and, unlike a copy_text button (256-char cap), has
+  // no such limit — so the full message (incl. phone/email) is copied intact.
+  // Sending stays a manual step, so the user's kleinanzeigen account is safe.
+  const reply = replyText?.trim();
+  if (reply) {
+    lines.push(
+      "",
+      "✍️ <b>Готовый текст ответа</b> (нажмите, чтобы скопировать):",
+      `<pre>${escapeTelegramHtml(reply)}</pre>`,
+    );
+  }
+
+  return lines.join("\n");
 }
 
 /**
- * Inline keyboard for a listing notification. Always offers an "open listing"
- * URL button (one tap to the kleinanzeigen page with its contact form). When a
- * reply text is configured, also offers a native copy_text button so the user
- * can paste the message and send it manually from their own account — no
- * automation against kleinanzeigen, so their account stays safe.
+ * Inline keyboard for a listing notification: a single "open listing" URL
+ * button (one tap to the kleinanzeigen page with its contact form). The reply
+ * text itself is embedded in the message body as a copyable <pre> block, not a
+ * button, because copy_text buttons are capped at 256 chars.
  */
 export function buildListingReplyMarkup(args: {
   listingUrl: unknown;
-  replyText?: string | null;
 }): TelegramReplyMarkup | undefined {
   const url = toHttpUrl(args.listingUrl);
-  const rows: TelegramInlineButton[][] = [];
-
-  if (url) {
-    rows.push([{ text: "🔗 Открыть и написать", url }]);
-  }
-
-  const reply = args.replyText?.trim();
-  if (reply) {
-    rows.push([
-      {
-        text: "📋 Скопировать текст",
-        copy_text: { text: reply.slice(0, COPY_TEXT_MAX_LEN) },
-      },
-    ]);
-  }
-
-  return rows.length > 0 ? { inline_keyboard: rows } : undefined;
+  if (!url) return undefined;
+  return { inline_keyboard: [[{ text: "🔗 Открыть и написать", url }]] };
 }
 
 export async function sendTelegramListing(
@@ -164,11 +158,8 @@ export async function sendTelegramListing(
   listing: TelegramListingPayload,
   replyText?: string | null,
 ): Promise<void> {
-  const caption = renderTelegramNotification(listing);
-  const replyMarkup = buildListingReplyMarkup({
-    listingUrl: listing.url,
-    replyText,
-  });
+  const caption = renderTelegramNotification(listing, replyText);
+  const replyMarkup = buildListingReplyMarkup({ listingUrl: listing.url });
   const image = listing.images
     ?.map((candidate) => toHttpUrl(candidate.url))
     .find((url) => url !== undefined);

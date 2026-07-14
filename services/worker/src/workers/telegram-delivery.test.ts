@@ -1,61 +1,58 @@
 import { describe, expect, it } from "vitest";
-import { buildListingReplyMarkup } from "./telegram-delivery.js";
+import {
+  buildListingReplyMarkup,
+  renderTelegramNotification,
+} from "./telegram-delivery.js";
+
+const listing = {
+  id: "listing-1",
+  url: "https://www.kleinanzeigen.de/s-anzeige/x/123",
+  city: "Ingolstadt",
+  price: 750,
+  area: 55,
+  rooms: 2,
+  source: { name: "Kleinanzeigen" },
+  images: [],
+};
 
 describe("buildListingReplyMarkup", () => {
-  const url = "https://www.kleinanzeigen.de/s-anzeige/x/123";
-
-  it("always includes an open-listing URL button", () => {
-    const markup = buildListingReplyMarkup({ listingUrl: url });
-    expect(markup?.inline_keyboard[0]?.[0]).toEqual({
-      text: "🔗 Открыть и написать",
-      url,
-    });
+  it("offers a single open-listing URL button", () => {
+    const markup = buildListingReplyMarkup({ listingUrl: listing.url });
+    expect(markup?.inline_keyboard).toEqual([
+      [{ text: "🔗 Открыть и написать", url: listing.url }]],
+    );
   });
 
-  it("adds a copy_text button when reply text is provided", () => {
-    const markup = buildListingReplyMarkup({
-      listingUrl: url,
-      replyText: "Hallo, ist die Wohnung noch verfügbar?",
-    });
-    const buttons = markup?.inline_keyboard.flat() ?? [];
-    expect(buttons).toContainEqual({
-      text: "📋 Скопировать текст",
-      copy_text: { text: "Hallo, ist die Wohnung noch verfügbar?" },
-    });
+  it("returns undefined when the URL is invalid", () => {
+    expect(buildListingReplyMarkup({ listingUrl: "not-a-url" })).toBeUndefined();
+  });
+});
+
+describe("renderTelegramNotification reply block", () => {
+  it("omits the reply block when no reply text is set", () => {
+    const text = renderTelegramNotification(listing);
+    expect(text).not.toContain("<pre>");
+    expect(text).not.toContain("Готовый текст");
   });
 
-  it("omits the copy button when reply text is empty or whitespace", () => {
-    for (const replyText of [undefined, null, "", "   "]) {
-      const markup = buildListingReplyMarkup({ listingUrl: url, replyText });
-      const hasCopy = (markup?.inline_keyboard.flat() ?? []).some(
-        (b) => "copy_text" in b,
-      );
-      expect(hasCopy).toBe(false);
-    }
+  it("embeds the full reply as a copyable <pre> block (no 256-char cap)", () => {
+    const reply =
+      "Guten Tag,\nmein Name ist Taras. " + "Sehr lange Nachricht ".repeat(30);
+    const text = renderTelegramNotification(listing, reply);
+    expect(text).toContain("<pre>");
+    // Full text preserved — not truncated to 256 chars.
+    expect(text.length).toBeGreaterThan(400);
+    expect(text).toContain("Готовый текст ответа");
   });
 
-  it("clamps copy text to the 256-char Telegram limit", () => {
-    const long = "a".repeat(400);
-    const markup = buildListingReplyMarkup({ listingUrl: url, replyText: long });
-    const copy = (markup?.inline_keyboard.flat() ?? []).find(
-      (b) => "copy_text" in b,
-    ) as { copy_text: { text: string } } | undefined;
-    expect(copy?.copy_text.text).toHaveLength(256);
+  it("HTML-escapes the reply so markup can't break the message", () => {
+    const text = renderTelegramNotification(listing, "A & B <tag> \"q\"");
+    expect(text).toContain("A &amp; B &lt;tag&gt; &quot;q&quot;");
+    expect(text).not.toContain("<tag>");
   });
 
-  it("returns undefined when the URL is invalid and no reply text is set", () => {
-    expect(
-      buildListingReplyMarkup({ listingUrl: "not-a-url" }),
-    ).toBeUndefined();
-  });
-
-  it("still offers the copy button when only the URL is invalid", () => {
-    const markup = buildListingReplyMarkup({
-      listingUrl: "not-a-url",
-      replyText: "Guten Tag",
-    });
-    const buttons = markup?.inline_keyboard.flat() ?? [];
-    expect(buttons).toHaveLength(1);
-    expect(buttons[0]).toHaveProperty("copy_text");
+  it("ignores whitespace-only reply text", () => {
+    const text = renderTelegramNotification(listing, "   ");
+    expect(text).not.toContain("<pre>");
   });
 });
