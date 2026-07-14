@@ -195,6 +195,13 @@ services:
       context: "https://github.com/DanielWTE/ebay-kleinanzeigen-api.git#1129536bb10e4d1c3b06e295beac0fe3f36f2a7d"
     environment:
       HEADLESS: "true"
+      # Route the Playwright/Chromium scraper through a proxy so kleinanzeigen
+      # doesn't block the VPS's datacenter IP. Set KLEINANZEIGEN_PROXY in .env
+      # (http(s):// or socks5:// with optional user:pass); empty = direct.
+      PROXY: "${KLEINANZEIGEN_PROXY:-}"
+    volumes:
+      # Overlay adds PROXY-env support to the upstream image (which has none).
+      - ./ops/kleinanzeigen/browser.py:/app/utils/browser.py:ro
     restart: unless-stopped
 
   # Observability: Prometheus scrapes api + worker-collect and evaluates the
