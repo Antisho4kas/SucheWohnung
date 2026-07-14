@@ -1,9 +1,21 @@
 import { createHash } from "node:crypto";
 
+type TelegramInlineButton =
+  | { text: string; url: string }
+  | { text: string; copy_text: { text: string } };
+
+type TelegramReplyMarkup = {
+  inline_keyboard: TelegramInlineButton[][];
+};
+
 type TelegramSendOptions = {
   parse_mode: "HTML";
   caption?: string;
+  reply_markup?: TelegramReplyMarkup;
 };
+
+// Telegram hard limit for a copy_text button payload.
+const COPY_TEXT_MAX_LEN = 256;
 
 export type TelegramApiLike = {
   sendMessage(
@@ -115,26 +127,69 @@ export function renderTelegramNotification(
   ].join("\n");
 }
 
+/**
+ * Inline keyboard for a listing notification. Always offers an "open listing"
+ * URL button (one tap to the kleinanzeigen page with its contact form). When a
+ * reply text is configured, also offers a native copy_text button so the user
+ * can paste the message and send it manually from their own account — no
+ * automation against kleinanzeigen, so their account stays safe.
+ */
+export function buildListingReplyMarkup(args: {
+  listingUrl: unknown;
+  replyText?: string | null;
+}): TelegramReplyMarkup | undefined {
+  const url = toHttpUrl(args.listingUrl);
+  const rows: TelegramInlineButton[][] = [];
+
+  if (url) {
+    rows.push([{ text: "🔗 Открыть и написать", url }]);
+  }
+
+  const reply = args.replyText?.trim();
+  if (reply) {
+    rows.push([
+      {
+        text: "📋 Скопировать текст",
+        copy_text: { text: reply.slice(0, COPY_TEXT_MAX_LEN) },
+      },
+    ]);
+  }
+
+  return rows.length > 0 ? { inline_keyboard: rows } : undefined;
+}
+
 export async function sendTelegramListing(
   api: TelegramApiLike,
   chatId: string,
   listing: TelegramListingPayload,
+  replyText?: string | null,
 ): Promise<void> {
   const caption = renderTelegramNotification(listing);
+  const replyMarkup = buildListingReplyMarkup({
+    listingUrl: listing.url,
+    replyText,
+  });
   const image = listing.images
     ?.map((candidate) => toHttpUrl(candidate.url))
     .find((url) => url !== undefined);
 
   if (typeof image === "string") {
     try {
-      await api.sendPhoto(chatId, image, { caption, parse_mode: "HTML" });
+      await api.sendPhoto(chatId, image, {
+        caption,
+        parse_mode: "HTML",
+        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+      });
       return;
     } catch (err) {
       if (classifyTelegramError(err).kind !== "permanent") throw err;
     }
   }
 
-  await api.sendMessage(chatId, caption, { parse_mode: "HTML" });
+  await api.sendMessage(chatId, caption, {
+    parse_mode: "HTML",
+    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+  });
 }
 
 export function createTelegramDedupeKey(args: {

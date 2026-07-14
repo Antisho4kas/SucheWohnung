@@ -47,6 +47,7 @@ type MatchRecord = {
   profile: {
     id: string;
     userId: string;
+    autoReplyText?: string | null;
     user: { telegramSubscriptions: SubscriptionRecord[] };
   };
   listing: ListingRecord;
@@ -309,10 +310,15 @@ async function deliverToSubscription(args: {
   }
 
   try {
+    const replyText =
+      args.match.profile.autoReplyText?.trim() ||
+      process.env.DEFAULT_AUTOREPLY_TEXT ||
+      null;
     await sendTelegramListing(
       args.deps.telegramApi,
       chatId,
       args.match.listing,
+      replyText,
     );
   } catch (err) {
     const classification = classifyTelegramError(err);
